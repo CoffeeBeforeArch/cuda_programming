@@ -19,6 +19,7 @@ CUDA version: 10.0
 ## Concepts covered in each video
 | Video | Concepts | Files |
 | ----- | -------- | ----- |
-| <a >GPGPU Programming with CUDA: Vector Add</a> | | <a >vector_add.cu</a> |
-| <a >GPGPU Programming with CUDA: Matrix Multiplication</a> | | <a >mmul.cu</a> |
-| <a >GPGPU Programming with CUDA: Tiled Matrix Multiplication</a> | | <a >tiled_mmul.cu</a> |
+| <a >GPGPU Programming with CUDA: Vector Add</a> | GPU Threads, Memory Allocation, Memory Copy, GPU Kernels, Running Kernels | <a >vector_add.cu</a> |
+| <a >GPGPU Programming with CUDA: Vector Add with Unified Memory</a> | Unified Memory, Prefetching | <a >vector_add_um.cu</a> |
+| <a >GPGPU Programming with CUDA: Matrix Multiplication</a> | 2-D Threadblocks, Alligned Memory Accesses | <a >matrix_mul.cu</a> |
+| <a >GPGPU Programming with CUDA: Tiled Matrix Multiplication</a> | Shared Memory, Cache Tiling | <a >tiled_matrix_mul.cu</a> |
