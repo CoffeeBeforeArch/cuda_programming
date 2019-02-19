@@ -42,19 +42,16 @@ void init_matrices(int *a, int *b, int n) {
 void verify_result(int *a, int *b, int *c, int n) {
 	int *verify_c;
 	verify_c = (int*)malloc(n * n * sizeof(int));
-	int temp_sum = 0;
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
 			for (int k = 0; k < n; k++) {
-				temp_sum += a[i * n + k] * b[k * n + j];
+				verify_c[i * n + j] += a[i * n + k] * b[k * n + j];
 			}
-			verify_c[i * n + j] = temp_sum;
 		}
 	}
 
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
-			printf("%d %d\n", c[i * n + j], verify_c[i * n + j]);
 			assert(c[i * n + j] == verify_c[i * n + j]);
 		}
 	}
@@ -92,7 +89,7 @@ int main() {
 	cudaMemcpy(d_b, h_b, bytes, cudaMemcpyHostToDevice);
 
 	// Threads per block
-	int BLOCK_SIZE = 128;
+	int BLOCK_SIZE = 16;
 
 	// Blocks in each dimension
 	int GRID_SIZE = (int)ceil(n / BLOCK_SIZE);
@@ -109,6 +106,8 @@ int main() {
 
 	// Check result
 	verify_result(h_a, h_b, h_c, n);
+
+	printf("COMPLETED SUCCESSFULLY\n");
 
 	return 0;
 }
