@@ -20,11 +20,12 @@ __global__ void matrixMul(int *a, int *b, int *c, int n) {
 		// Iterate over row, and down column
 		for (int k = 0; k < n; k++) {
 			// Accumulate result for a single element
-			temp_sum += a[row * n + k] + b[k * n + col];
+			temp_sum += a[row * n + k] * b[k * n + col];
 		}
+		// Assign result
+		c[row * n + col] = temp_sum;
 	}
-	// Assign result
-	c[row * n + col] = temp_sum;
+
 }
 
 // Initialization function for matrices
@@ -38,7 +39,25 @@ void init_matrices(int *a, int *b, int n) {
 }
 
 // Check result
-void verify_result() {
+void verify_result(int *a, int *b, int *c, int n) {
+	int *verify_c;
+	verify_c = (int*)malloc(n * n * sizeof(int));
+	int temp_sum = 0;
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n; j++) {
+			for (int k = 0; k < n; k++) {
+				temp_sum += a[i * n + k] * b[k * n + j];
+			}
+			verify_c[i * n + j] = temp_sum;
+		}
+	}
+
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n; j++) {
+			printf("%d %d\n", c[i * n + j], verify_c[i * n + j]);
+			assert(c[i * n + j] == verify_c[i * n + j]);
+		}
+	}
 
 }
 
@@ -70,26 +89,26 @@ int main() {
 
 	// Copy data to the device
 	cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_b, h_b, bytes, cudaMemcpyHostToDevice);
 
 	// Threads per block
 	int BLOCK_SIZE = 128;
 
 	// Blocks in each dimension
-	int GRID_SIZE = (int)ceil(n / 128);
+	int GRID_SIZE = (int)ceil(n / BLOCK_SIZE);
 
 	// Use dim3 objects
 	dim3 grid(GRID_SIZE, GRID_SIZE);
 	dim3 threads(BLOCK_SIZE, BLOCK_SIZE);
 
 	// Launch kernel
-	matrixMul << <grid, threads >> > (d_a, d_b, d_c, n);
+	matrixMul <<<grid, threads >>> (d_a, d_b, d_c, n);
 
 	// Copy back to the host
 	cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);
 
 	// Check result
-	verify_result();
+	verify_result(h_a, h_b, h_c, n);
 
 	return 0;
 }
