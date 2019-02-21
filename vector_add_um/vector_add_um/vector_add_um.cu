@@ -18,10 +18,9 @@ __global__ void vectorAddUM(int *a, int *b, int *c, int n) {
 	}
 }
 
-void init_vector(int *a, int *b, int n) {
+void vector_init(int *a, int n) {
 	for (int i = 0; i < n; i++) {
 		a[i] = rand() % 100;
-		b[i] = rand() % 100;
 	}
 }
 
@@ -50,7 +49,8 @@ int main() {
 	cudaMallocManaged(&c, bytes);
 
 	// Initialize vectors
-	init_vector(a, b, n);
+	vector_init(a, n);
+	vector_init(b, n);
 	
 	// Set threadblock size
 	int BLOCK_SIZE = 256;
@@ -72,6 +72,11 @@ int main() {
 
 	// Check result
 	check_answer(a, b, c, n);
+
+    // Free unified memory
+    cudaFree(a);
+    cudaFree(b);
+    cudaFree(c);
 
 	printf("COMPLETED SUCCESSFULLY\n");
 	

@@ -20,14 +20,14 @@ __global__ void vectorAdd(int* a, int* b, int* c, int n) {
 }
 
 // Initialize vector of size n to int between 0-99
-void matrix_init(int* a, int n) {
+void vector_init(int* a, int n) {
 	for (int i = 0; i < n; i++) {
 		a[i] = rand() % 100;
 	}
 }
 
 // Check vector add result
-void error_check(int* a, int* b, int*c, int n) {
+void check_answer(int* a, int* b, int*c, int n) {
 	for (int i = 0; i < n; i++) {
 		assert(c[i] == a[i] + b[i]);
 	}
@@ -54,8 +54,8 @@ int main() {
 	cudaMalloc(&d_c, bytes);
 
 	// Initialize vectors a and b with random values between 0 and 99
-	matrix_init(h_a, n);
-	matrix_init(h_b, n);
+	vector_init(h_a, n);
+	vector_init(h_b, n);
 
 	// Copy data from
 	cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
@@ -74,7 +74,17 @@ int main() {
 	cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);
 
 	// Check result for errors
-	error_check(h_a, h_b, h_c, n);
+	check_answer(h_a, h_b, h_c, n);
+
+    // Free memory on host
+    free(h_a);
+    free(h_b);
+    free(h_c);
+
+    // Free memory on device
+    cudaFree(d_a);
+    cudaFree(d_b);
+    cudaFree(d_c);
 
 	printf("COMPLETED SUCCESFULLY\n");
 
