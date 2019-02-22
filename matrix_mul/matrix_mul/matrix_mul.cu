@@ -54,7 +54,6 @@ void check_answer(int *a, int *b, int *c, int n) {
 			assert(c[i * n + j] == verify_c[i * n + j]);
 		}
 	}
-
 }
 
 int main() {
