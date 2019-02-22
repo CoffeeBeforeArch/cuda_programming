@@ -41,11 +41,14 @@ void matrix_init(int *a, int n) {
 void check_answer(int *a, int *b, int *c, int n) {
 	int *verify_c;
 	verify_c = (int*)malloc(n * n * sizeof(int));
+	int temp_sum;
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
+			temp_sum = 0;
 			for (int k = 0; k < n; k++) {
-				verify_c[i * n + j] += a[i * n + k] * b[k * n + j];
+				temp_sum += a[i * n + k] * b[k * n + j];
 			}
+			verify_c[i * n + j] = temp_sum;
 		}
 	}
 
