@@ -134,9 +134,6 @@ int main() {
 	dim3 grid(GRID_SIZE, GRID_SIZE);
 	dim3 threads(BLOCK_SIZE, BLOCK_SIZE);
 
-	// Shared memory size is the number of elements stored be tile
-	size_t shmem_size = BLOCK_SIZE * BLOCK_SIZE * sizeof(int);
-
 	// Launch kernel
 	tiledMatrixMul <<<grid, threads>>> (d_a, d_b, d_c, n, BLOCK_SIZE);
 
