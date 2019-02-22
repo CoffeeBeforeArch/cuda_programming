@@ -8,10 +8,13 @@
 #include <assert.h>
 #include <math.h>
 
+// Static shmem calculation for convenience (Int 16x16 matrix)
+#define SHMEM_SIZE 16 * 16 * 4
+
 __global__ void tiledMatrixMul(int *a, int *b, int *c, int n, int tile_size) {
-	// Two dynamically sized pieces of shared memory
-	extern __shared__ int A[];
-	extern __shared__ int B[];
+	// Two statically-sized pieces of shared memory
+	__shared__ int A[SHMEM_SIZE];
+	__shared__ int B[SHMEM_SIZE];
 
 	// Shorten these parameters for clean re-use
 	int tx = threadIdx.x;
@@ -61,20 +64,9 @@ __global__ void tiledMatrixMul(int *a, int *b, int *c, int n, int tile_size) {
 	c[(row * n) + col] = temp_val;
 }
 
-void print_matrix(int *a, int n) {
-	for (int i = 0; i < n; i++) {
-		for (int j = 0; j < n; j++) {
-			printf("%d ", a[i * n + j]);
-		}
-		printf("\n");
-	}
-	printf("\n");
-}
-
 void check_answer(int *a, int *b, int *c, int n) {
 	int *verify_c;
 	verify_c = (int*)malloc(n * n * sizeof(int));
-
 	int temp_val;
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
@@ -85,7 +77,6 @@ void check_answer(int *a, int *b, int *c, int n) {
 			verify_c[i * n + j] = temp_val;
 		}
 	}
-	print_matrix(verify_c, n);
 
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
@@ -104,7 +95,7 @@ void init_matrix(int *a, int n) {
 
 int main() {
 	// Problem size = 1024 x 1024 matrix
-	int n = 1 << 3;
+	int n = 1 << 10;
 
 	// Matrix size (in bytes)
 	size_t bytes = n * n * sizeof(int);
@@ -127,16 +118,14 @@ int main() {
 
 	// Initialize matrices
 	init_matrix(h_a, n);
-	print_matrix(h_a, n);
 	init_matrix(h_b, n);
-	print_matrix(h_b, n);
 
 	// Copy matrices to the device
 	cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
 	cudaMemcpy(d_b, h_b, bytes, cudaMemcpyHostToDevice);
 
 	// Threads per block (in both x and y dimensions)
-	int BLOCK_SIZE = 8;
+	int BLOCK_SIZE = 16;
 
 	// Blocks in each dimension
 	int GRID_SIZE = (int)ceil(n / BLOCK_SIZE);
@@ -149,11 +138,10 @@ int main() {
 	size_t shmem_size = BLOCK_SIZE * BLOCK_SIZE * sizeof(int);
 
 	// Launch kernel
-	tiledMatrixMul <<<grid, threads, shmem_size>>> (d_a, d_b, d_c, n, BLOCK_SIZE);
+	tiledMatrixMul <<<grid, threads>>> (d_a, d_b, d_c, n, BLOCK_SIZE);
 
 	// Copy result back from device
-	cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);
-	print_matrix(h_c, n);
+	cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);	
 
 	// Verify the result
 	check_answer(h_a, h_b, h_c, n);
