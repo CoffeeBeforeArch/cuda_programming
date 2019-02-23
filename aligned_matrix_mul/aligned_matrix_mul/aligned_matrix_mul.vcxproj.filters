@@ -15,12 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="kernels.cuh">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="aligned_matrix_mul.cu">
+    <CudaCompile Include="misaligned_matrix_mul.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>

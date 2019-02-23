@@ -8,7 +8,24 @@
 #include <assert.h>
 #include <math.h>
 
-#include "kernels.cuh"
+__global__ void matrixMulMisaligned(int *a, int *b, int *c, int n) {
+	// Compute each thread's row
+	int row = blockIdx.y * blockDim.y + threadIdx.y;
+	// Compute each thread's column
+	int col = blockIdx.x * blockDim.x + threadIdx.x;
+
+	int temp_sum = 0;
+	// Boundary protection
+	if ((row < n) && (col < n)) {
+		// Iterate over row, and down column
+		for (int k = 0; k < n; k++) {
+			// Accumulate result for a single element
+			temp_sum += a[row * n + k] * b[col * n + k];
+		}
+		// Assign result
+		c[row * n + col] = temp_sum;
+	}
+}
 
 void transpose_matrix(int *a, int *a_t, int n) {
 	for (int i = 0; i < n; i++) {
@@ -55,27 +72,26 @@ int main() {
 	size_t bytes = n * n * sizeof(int);
 
 	// Host pointer to transposeed matrix
-	int *h_a_t;
+	int *h_b_t;
 
 	// Host matrix pointers
 	int *h_a, *h_b, *h_c;
 
-	// Device matrix pointers
-	int *d_a, *d_b, *d_c;
-
 	// Device pointer to transposeed matrix
-	int *d_a_t;
+	int *d_b_t;
+
+	// Device matrix pointers
+	int *d_a, *d_c;
 
 	// Allocate host memory
-	h_a_t = (int*)malloc(bytes);
 	h_a = (int*)malloc(bytes);
 	h_b = (int*)malloc(bytes);
+	h_b_t = (int*)malloc(bytes);
 	h_c = (int*)malloc(bytes);
 
 	// Allocate device memory
-	cudaMalloc(&d_a_t, bytes);
-	//cudaMalloc(&d_a, bytes);
-	cudaMalloc(&d_b, bytes);
+	cudaMalloc(&d_a, bytes);
+	cudaMalloc(&d_b_t, bytes);
 	cudaMalloc(&d_c, bytes);
 
 
@@ -84,12 +100,11 @@ int main() {
 	init_matrix(h_b, n);
 
 	// Transpose matrix a
-	transpose_matrix(h_a, h_a_t, n);
+	transpose_matrix(h_b, h_b_t, n);
 
 	// Copy matrices to the device
-	cudaMemcpy(d_a_t, h_a_t, bytes, cudaMemcpyHostToDevice);
-	//cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_b, h_b, bytes, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_b_t, h_b_t, bytes, cudaMemcpyHostToDevice);
 
 	// Threads per block (in both x and y dimensions)
 	int BLOCK_SIZE = 16;
@@ -102,7 +117,7 @@ int main() {
 	dim3 threads(BLOCK_SIZE, BLOCK_SIZE);
 
 	// Launch kernel
-	matrixMulAligned<<<grid, threads >>> (d_a_t, d_b, d_c, n);
+	matrixMulMisaligned<<<grid, threads >>> (d_a, d_b_t, d_c, n);
 
 	// Copy result back from device
 	cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);
@@ -110,23 +125,15 @@ int main() {
 	// Verify the result
 	check_answer(h_a, h_b, h_c, n);
 
-	// Launch kernel
-	//tiledMatrixMul <<<grid, threads >>> (d_a, d_b, d_c, n, BLOCK_SIZE);
-
-	// Copy result back from device
-	//cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);
-
-	// Verify the result
-	//check_answer(h_a, h_b, h_c, n);
-
 	// Free host memory
 	free(h_a);
 	free(h_b);
+	free(h_b_t);
 	free(h_c);
 
 	// Free device memory
 	cudaFree(d_a);
-	cudaFree(d_b);
+	cudaFree(d_b_t);
 	cudaFree(d_c);
 
 	printf("COMPLETED SUCCESSFULLY\n");

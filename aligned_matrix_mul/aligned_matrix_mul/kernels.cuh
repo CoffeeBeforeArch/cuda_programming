@@ -14,12 +14,11 @@ __global__ void matrixMulAligned(int *a, int *b, int *c, int n) {
 		// Iterate over row, and down column
 		for (int k = 0; k < n; k++) {
 			// Accumulate result for a single element
-			temp_sum += a[k * n + row] * b[k * n + col];
+			temp_sum += a[row * n + k] * b[k * n + col];
 		}
 		// Assign result
 		c[row * n + col] = temp_sum;
 	}
-
 }
 
 // Static shmem calculation for convenience (Int 16x16 matrix)
