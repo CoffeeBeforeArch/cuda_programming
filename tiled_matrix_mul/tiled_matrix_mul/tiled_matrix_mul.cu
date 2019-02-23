@@ -1,4 +1,4 @@
-// This program is an optimized version of Matrix Multiplication
+// This program is an optimized version of matrix multiplication
 // By: Nick from CoffeeBeforeArch
 
 #include <cuda_runtime.h>

@@ -1,4 +1,4 @@
-// This program computes the product of two matrices
+// This program computes a naive version of matrix multiplication
 // By: Nick from CoffeeBeforeArch
 
 #include <cuda_runtime.h>
