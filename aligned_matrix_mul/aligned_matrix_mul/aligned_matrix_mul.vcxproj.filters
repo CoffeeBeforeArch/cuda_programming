@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\missaligned_matrix_mul\missaligned_matrix_mul\misaligned_matrix_mul.cu">
+    <CudaCompile Include="misaligned_matrix_mul.cu">
       <Filter>Source Files</Filter>
     </CudaCompile>
   </ItemGroup>
