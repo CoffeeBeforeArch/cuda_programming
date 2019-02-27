@@ -26,7 +26,7 @@ int main() {
 	// Vector size
 	int n = 1 << 2;
 	size_t bytes = n * sizeof(float);
-
+	
 	// Declare vector pointers
 	float *h_a, *h_b, *h_c;
 	float *d_a, *d_b;
@@ -50,7 +50,7 @@ int main() {
 	cublasSetVector(n, sizeof(float), h_a, 1, d_a, 1);
 	cublasSetVector(n, sizeof(float), h_b, 1, d_b, 1);
 
-	// Launch simple saxpy kernel
+	// Launch simple saxpy kernel (single precision a * x + y
 	const float scale = 2.0f;
 	cublasSaxpy(handle, n, &scale, d_a, 1, d_b, 1);
 
