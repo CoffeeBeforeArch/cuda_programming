@@ -51,6 +51,7 @@ int main() {
 	cublasSetVector(n, sizeof(float), h_b, 1, d_b, 1);
 
 	// Launch simple saxpy kernel (single precision a * x + y)
+    // Function signature: handle, # elements n, A, increment, B, increment
 	const float scale = 2.0f;
 	cublasSaxpy(handle, n, &scale, d_a, 1, d_b, 1);
 
