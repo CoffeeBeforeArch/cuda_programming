@@ -28,7 +28,7 @@ void verify_result(float *a, float *b, float *c, int n){
 
 int main(){
     // Problem size
-    int n = 1 << 1024;
+    int n = 1 << 10;
     size_t bytes = n * n * sizeof(float);
 
     // Declare pointers
