@@ -1,3 +1,8 @@
+// This program uses cuRAND and cuBLAS to perform matrix multiplication
+// By: Nick from CoffeeBeforeArch
+
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <curand.h>
@@ -22,16 +27,18 @@ void verify_result(float *a, float *b, float *c, int n){
 }
 
 int main(){
-    int n = 1 << 2;
+    // Problem size
+    int n = 1 << 1024;
     size_t bytes = n * n * sizeof(float);
 
+    // Declare pointers
     float *h_a, *h_b, *h_c;
     float *d_a, *d_b, *d_c;
     
+    // Allocate memory
     h_a = (float*)malloc(bytes);
     h_b = (float*)malloc(bytes);
     h_c = (float*)malloc(bytes);
-
     cudaMalloc(&d_a, bytes);
     cudaMalloc(&d_b, bytes);
     cudaMalloc(&d_c, bytes);
