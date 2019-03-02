@@ -24,7 +24,7 @@ void verify_result(float *a, float *b, float *c, float factor, int n) {
 
 int main() {
 	// Vector size
-	int n = 1 << 2;
+	int n = 1 << 16;
 	size_t bytes = n * sizeof(float);
 	
 	// Declare vector pointers
