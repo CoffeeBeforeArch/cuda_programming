@@ -9,10 +9,11 @@
 #include <assert.h>
 
 #define SIZE 256
+#define SHMEM_SIZE 256 * 4
 
 __global__ void sum_reduction(int *v, int *v_r) {
 	// Allocate shared memory
-	__shared__ int partial_sum[SIZE];
+	__shared__ int partial_sum[SHMEM_SIZE];
 
 	// Calculate thread ID
 	int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -33,7 +34,7 @@ __global__ void sum_reduction(int *v, int *v_r) {
 
 	// Let the thread 0 for this block write it's result to main memory
 	// Result is inexed by this block
-	if (blockIdx.x == 0) {
+	if (threadIdx.x == 0) {
 		v_r[blockIdx.x] = partial_sum[0];
 	}
 }
@@ -46,7 +47,7 @@ void initialize_vector(int *v, int n) {
 
 int main() {
 	// Vector size
-	int n = 1 << 7;
+	int n = 1 << 16;
 	size_t bytes = n * sizeof(int);
 
 	// Original vector and result vector
@@ -66,21 +67,25 @@ int main() {
 	cudaMemcpy(d_v, h_v, bytes, cudaMemcpyHostToDevice);
 	
 	// TB Size
-	int TB_SIZE = 128;
+	int TB_SIZE = SIZE;
 
 	// Grid Size
 	int GRID_SIZE = (int)ceil(n / TB_SIZE);
 
 	// Call kernel
-	sum_reduction<<<GRID_SIZE, TB_SIZE>>>(d_v, d_v_r);
+	sum_reduction <<<GRID_SIZE, TB_SIZE>>> (d_v, d_v_r);
+
+	sum_reduction <<<1, TB_SIZE>>> (d_v_r, d_v_r);
 
 	// Copy to host;
 	cudaMemcpy(h_v_r, d_v_r, bytes, cudaMemcpyDeviceToHost);
 
 	// Print the result
-	printf("%d \n", h_v_r[0]);
+	printf("Accumulated result is %d \n", h_v_r[0]);
+	scanf("Press enter to continue: ");
+	assert(h_v_r[0] == 65536);
 
-	assert(h_v_r[0] == 128);
+	printf("COMPLETED SUCCESSFULLY\n");
 
 	return 0;
 }
