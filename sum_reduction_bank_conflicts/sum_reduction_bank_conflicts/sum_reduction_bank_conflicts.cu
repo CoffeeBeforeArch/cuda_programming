@@ -2,15 +2,15 @@
 // removing warp divergence
 // By: Nick from CoffeeBeforeArch
 
-#define SIZE 256
-#define SHMEM_SIZE 256 * 4
-
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 #include <math.h>
+
+#define SIZE 256
+#define SHMEM_SIZE 256 * 4
 
 __global__ void sum_reduction(int *v, int *v_r) {
 	// Allocate shared memory
