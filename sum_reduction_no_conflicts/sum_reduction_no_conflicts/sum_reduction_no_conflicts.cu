@@ -1,5 +1,5 @@
 // This program performs sum reduction with an optimization
-// removing warp divergence
+// removing warp bank conflicts
 // By: Nick from CoffeeBeforeArch
 
 #include <cuda_runtime.h>
@@ -23,14 +23,10 @@ __global__ void sum_reduction(int *v, int *v_r) {
 	partial_sum[threadIdx.x] = v[tid];
 	__syncthreads();
 
-	// 
-	for (int s = 1; s < blockDim.x; s *= 2) {
-		// Change the indexing to be sequential threads
-		int index = 2 * s * threadIdx.x;
-
+	for (int s = blockDim.x / 2; s > 0; s >>= 1) {
 		// Each thread does work unless the index goes off the block
-		if (index < blockDim.x) {
-			partial_sum[index] += partial_sum[index + s];
+		if (threadIdx.x < s) {
+			partial_sum[threadIdx.x] += partial_sum[threadIdx.x + s];
 		}
 		__syncthreads();
 	}
@@ -76,9 +72,9 @@ int main() {
 	int GRID_SIZE = (int)ceil(n / TB_SIZE);
 
 	// Call kernel
-	sum_reduction << <GRID_SIZE, TB_SIZE >> > (d_v, d_v_r);
+	sum_reduction <<<GRID_SIZE, TB_SIZE >>> (d_v, d_v_r);
 
-	sum_reduction << <1, TB_SIZE >> > (d_v_r, d_v_r);
+	sum_reduction <<<1, TB_SIZE >>> (d_v_r, d_v_r);
 
 	// Copy to host;
 	cudaMemcpy(h_v_r, d_v_r, bytes, cudaMemcpyDeviceToHost);
