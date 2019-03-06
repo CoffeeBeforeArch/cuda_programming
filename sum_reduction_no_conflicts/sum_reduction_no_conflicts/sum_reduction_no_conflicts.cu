@@ -23,8 +23,9 @@ __global__ void sum_reduction(int *v, int *v_r) {
 	partial_sum[threadIdx.x] = v[tid];
 	__syncthreads();
 
+	// Start at 1/2 block stride and divide by two each iteration
 	for (int s = blockDim.x / 2; s > 0; s >>= 1) {
-		// Each thread does work unless the index goes off the block
+		// Each thread does work unless it is further than the stride
 		if (threadIdx.x < s) {
 			partial_sum[threadIdx.x] += partial_sum[threadIdx.x + s];
 		}
