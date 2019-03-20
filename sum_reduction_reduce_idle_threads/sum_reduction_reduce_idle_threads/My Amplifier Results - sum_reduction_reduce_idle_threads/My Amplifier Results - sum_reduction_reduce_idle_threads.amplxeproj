@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+ <rdmgr>
+  <timestamp type="u64_t">1553047428</timestamp>
+  <hostname>DESKTOP-NG640K6</hostname>
+  <os>windows</os>
+  <product>Intel® VTune™ Amplifier 2019 Update 2</product>
+  <buildNumber type="s32_t">588069</buildNumber>
+  <logicalCPUCount type="s32_t">8</logicalCPUCount>
+  <physicalCoreCount type="s32_t">4</physicalCoreCount>
+  <processorPackageCount type="s32_t">1</processorPackageCount>
+  <CPUFrequency type="s64_t">3600000000</CPUFrequency>
+  <CPUFamily type="s32_t">6</CPUFamily>
+  <CPUModel type="s32_t">158</CPUModel>
+  <CPUStepping type="s32_t">9</CPUStepping>
+  <CPUBrandName>Intel(R) Core(TM) i7-7700 CPU @ 3.60GHz</CPUBrandName>
+  <isa>avx2</isa>
+ </rdmgr>
+</root>
