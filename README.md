@@ -8,13 +8,15 @@ Suggestions for specific content can be sent to: CoffeeBeforeArch@gmail.com
 An up to date list on all series is available at: <a href="https://docs.google.com/spreadsheets/d/1cV4nuP-ZflfeGUn0Ay0w-ZKJrh9CqDEKvBJqCNMlTxI/edit?usp=sharing">Google Sheets</a>
 
 ## Environment 
-Operating System: Windows 10
+Operating System: Windows 10 & Ubuntu 18.04
 
 IDE: Visual Studio 2017
 
+Text Editor: VIM
+
 GPU: NVIDIA GTX 1050 Ti
 
-CUDA version: 10.0
+CUDA version: 10.0, 9.1
 
 ## Concepts covered in each video
 | Video | Concepts | Files |
