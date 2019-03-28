@@ -33,30 +33,30 @@ __global__ void sum_reduction(int *v, int *v_r) {
 
 	// Load elements AND do first add of reduction
 	// Vector now 2x as long as number of threads, so scale i
-	int i = blockIdx.x * (blockDim.x * 2) + threadIdx.x;
+	int i = blockIdx.x * (blockDim.x * 2) + tid;
 
 	// Store first partial result instead of just the elements
-	partial_sum[threadIdx.x] = v[i] + v[i + blockDim.x];
+	partial_sum[tid] = v[i] + v[i + blockDim.x];
 	__syncthreads();
 
 	// Unroll the loop to remove un-ncessary control flow instructions
 	if (tid < 128) {
-		partial_sum[threadIdx.x] += partial_sum[threadIdx.x + 128];
+		partial_sum[tid] += partial_sum[tid + 128];
 		__syncthreads();
 	}
 
 	if (tid < 64) {
-		partial_sum[threadIdx.x] += partial_sum[threadIdx.x + 64];
+		partial_sum[tid] += partial_sum[tid + 64];
 		__syncthreads();
 	}
 
 	if (threadIdx.x < 32) {
-		warpReduce(partial_sum, threadIdx.x);
+		warpReduce(partial_sum, tid);
 	}
 
 	// Let the thread 0 for this block write it's result to main memory
 	// Result is inexed by this block
-	if (threadIdx.x == 0) {
+	if (tid == 0) {
 		v_r[blockIdx.x] = partial_sum[0];
 	}
 }
