@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.438
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sum_reduction_loop_unrolling", "sum_reduction_loop_unrolling\sum_reduction_loop_unrolling.vcxproj", "{EE8169F2-C3D9-40F7-B014-847ABCD3A765}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EE8169F2-C3D9-40F7-B014-847ABCD3A765}.Debug|x64.ActiveCfg = Debug|x64
+		{EE8169F2-C3D9-40F7-B014-847ABCD3A765}.Debug|x64.Build.0 = Debug|x64
+		{EE8169F2-C3D9-40F7-B014-847ABCD3A765}.Debug|x86.ActiveCfg = Debug|Win32
+		{EE8169F2-C3D9-40F7-B014-847ABCD3A765}.Debug|x86.Build.0 = Debug|Win32
+		{EE8169F2-C3D9-40F7-B014-847ABCD3A765}.Release|x64.ActiveCfg = Release|x64
+		{EE8169F2-C3D9-40F7-B014-847ABCD3A765}.Release|x64.Build.0 = Release|x64
+		{EE8169F2-C3D9-40F7-B014-847ABCD3A765}.Release|x86.ActiveCfg = Release|Win32
+		{EE8169F2-C3D9-40F7-B014-847ABCD3A765}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B18DF8EB-A075-4555-AFA0-4F3AA539C0E3}
+	EndGlobalSection
+EndGlobal
