@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <assert.h>
+#include <iostream>
 
 // CUDA kernel for vector addition
 __global__ void vectorAdd(int* a, int* b, int* c, int n) {
@@ -65,7 +66,7 @@ int main() {
 	int NUM_THREADS = 256;
 	
 	// Grid size
-	int NUM_BLOCKS = (int)ceil(n / NUM_THREADS);
+	int NUM_BLOCKS = (n + NUM_THREADS - 1) / NUM_THREADS;
 
 	// Launch kernel on default stream w/o shmem
 	vectorAdd<<<NUM_BLOCKS, NUM_THREADS>>>(d_a, d_b, d_c, n);
