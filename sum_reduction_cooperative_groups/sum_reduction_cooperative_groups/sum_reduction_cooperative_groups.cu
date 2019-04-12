@@ -9,57 +9,57 @@
 #include <stdio.h>
 #include <assert.h>
 #include <math.h>
+#include <iostream>
 
 using namespace cooperative_groups;
 
-#define SIZE 256
-#define SHMEM_SIZE 256 * 4
+// Reduces a thread group to a single element
+__device__ int reduce_sum(thread_group g, int *temp, int val){
+	int lane = g.thread_rank();
 
-// For last iteration (saves useless work)
-// Use volatile to prevent caching in registers (compiler optimization)
-// No __syncthreads() necessary!
-__device__ void warpReduce(volatile int* shmem_ptr, int t) {
-	shmem_ptr[t] += shmem_ptr[t + 32];
-	shmem_ptr[t] += shmem_ptr[t + 16];
-	shmem_ptr[t] += shmem_ptr[t + 8];
-	shmem_ptr[t] += shmem_ptr[t + 4];
-	shmem_ptr[t] += shmem_ptr[t + 2];
-	shmem_ptr[t] += shmem_ptr[t + 1];
+	// Each thread adds its partial sum[i] to sum[lane+i]
+	for (int i = g.size() / 2; i > 0; i /= 2){
+		temp[lane] = val;
+		// wait for all threads to store
+		g.sync();
+		if (lane < i) {
+			val += temp[lane + i];
+		}
+		// wait for all threads to load
+		g.sync();
+	}
+	// note: only thread 0 will return full sum
+	return val; 
 }
 
-__global__ void sum_reduction(int *v, int *v_r) {
-	// Allocate shared memory
-	__shared__ int partial_sum[SHMEM_SIZE];
-
-	// Calculate thread ID
+// Creates partials sums from the original array
+__device__ int thread_sum(int *input, int n){
+	int sum = 0;
 	int tid = blockIdx.x * blockDim.x + threadIdx.x;
-
-	// Load elements AND do first add of reduction
-	// Vector now 2x as long as number of threads, so scale i
-	int i = blockIdx.x * (blockDim.x * 2) + threadIdx.x;
-
-	// Store first partial result instead of just the elements
-	partial_sum[threadIdx.x] = v[i] + v[i + blockDim.x];
-	__syncthreads();
-
-	// Start at 1/2 block stride and divide by two each iteration
-	// Stop early (call device function instead)
-	for (int s = blockDim.x / 2; s > 32; s >>= 1) {
-		// Each thread does work unless it is further than the stride
-		if (threadIdx.x < s) {
-			partial_sum[threadIdx.x] += partial_sum[threadIdx.x + s];
-		}
-		__syncthreads();
+	for (int i = tid; i < n / 4; i += blockDim.x * gridDim.x){
+		// Cast as int4 
+		int4 in = ((int4*)input)[i];
+		sum += in.x + in.y + in.z + in.w;
 	}
+	return sum;
+}
 
-	if (threadIdx.x < 32) {
-		warpReduce(partial_sum, threadIdx.x);
-	}
+__global__ void sum_reduction(int *sum, int *input, int n){
+	// Create partial sums from the array
+	int my_sum = thread_sum(input, n);
 
-	// Let the thread 0 for this block write it's result to main memory
-	// Result is inexed by this block
-	if (threadIdx.x == 0) {
-		v_r[blockIdx.x] = partial_sum[0];
+	// Dynamic shared memory allocation
+	extern __shared__ int temp[];
+	
+	// Identifier for a TB
+	auto g = this_thread_block();
+	
+	// Reudce each TB
+	int block_sum = reduce_sum(g, temp, my_sum);
+
+	// Collect the partial result from each TB
+	if (g.thread_rank() == 0) {
+		atomicAdd(sum, block_sum);
 	}
 }
 
@@ -71,43 +71,35 @@ void initialize_vector(int *v, int n) {
 
 int main() {
 	// Vector size
-	int n = 1 << 16;
+	int n = 1 << 13;
 	size_t bytes = n * sizeof(int);
 
 	// Original vector and result vector
-	int *h_v, *h_v_r;
-	int *d_v, *d_v_r;
+	int *sum;
+	int *data;
 
-	// Allocate memory
-	h_v = (int*)malloc(bytes);
-	h_v_r = (int*)malloc(bytes);
-	cudaMalloc(&d_v, bytes);
-	cudaMalloc(&d_v_r, bytes);
+	// Allocate using unified memory
+	cudaMallocManaged(&sum, sizeof(int));
+	cudaMallocManaged(&data, bytes);
 
 	// Initialize vector
-	initialize_vector(h_v, n);
-
-	// Copy to device
-	cudaMemcpy(d_v, h_v, bytes, cudaMemcpyHostToDevice);
+	initialize_vector(data, n);
 
 	// TB Size
-	int TB_SIZE = SIZE;
+	int TB_SIZE = 256;
 
 	// Grid Size (cut in half)
-	int GRID_SIZE = (int)ceil(n / TB_SIZE / 2);
+	int GRID_SIZE = (n + TB_SIZE - 1) / TB_SIZE;
 
 	// Call kernel
-	sum_reduction << <GRID_SIZE, TB_SIZE >> > (d_v, d_v_r);
+	sum_reduction << <GRID_SIZE, TB_SIZE, n * sizeof(int) >> > (sum, data, n);
 
-	sum_reduction << <1, TB_SIZE >> > (d_v_r, d_v_r);
+	// Synchronize the kernel
+	cudaDeviceSynchronize();
 
-	// Copy to host;
-	cudaMemcpy(h_v_r, d_v_r, bytes, cudaMemcpyDeviceToHost);
-
-	// Print the result
-	//printf("Accumulated result is %d \n", h_v_r[0]);
+	//printf("Accumulated result is %d \n", sum[0]);
 	//scanf("Press enter to continue: ");
-	assert(h_v_r[0] == 65536);
+	assert(*sum == 8192);
 
 	printf("COMPLETED SUCCESSFULLY\n");
 
