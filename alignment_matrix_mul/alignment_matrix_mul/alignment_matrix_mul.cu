@@ -116,8 +116,8 @@ int main() {
 	// Threads per block
 	int BLOCK_SIZE = 16;
 
-	// Blocks in each dimension
-	int GRID_SIZE = (int)ceil(n / BLOCK_SIZE);
+	// Blocks in each dimension (No padding)
+	int GRID_SIZE = n / BLOCK_SIZE;
 
 	// Use dim3 objects
 	dim3 grid(GRID_SIZE, GRID_SIZE);

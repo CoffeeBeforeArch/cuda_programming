@@ -90,8 +90,8 @@ int main() {
 	// TB Size
 	int TB_SIZE = SIZE;
 
-	// Grid Size (cut in half)
-	int GRID_SIZE = (int)ceil(n / TB_SIZE / 2);
+	// Grid Size (cut in half) (No padding)
+	int GRID_SIZE = n / TB_SIZE / 2;
 
 	// Call kernel
 	sum_reduction << <GRID_SIZE, TB_SIZE >> > (d_v, d_v_r);

@@ -128,7 +128,7 @@ int main() {
 	int BLOCK_SIZE = 16;
 
 	// Blocks in each dimension
-	int GRID_SIZE = (int)ceil(n / BLOCK_SIZE);
+	int GRID_SIZE = (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
 	// Use dim3 objects for 2-D grids and threadblocks
 	dim3 grid(GRID_SIZE, GRID_SIZE);
