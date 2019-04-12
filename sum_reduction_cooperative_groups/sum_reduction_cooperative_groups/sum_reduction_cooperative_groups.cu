@@ -91,15 +91,15 @@ int main() {
 	// Grid Size (cut in half)
 	int GRID_SIZE = (n + TB_SIZE - 1) / TB_SIZE;
 
-	// Call kernel
-	sum_reduction << <GRID_SIZE, TB_SIZE, n * sizeof(int) >> > (sum, data, n);
+	// Call kernel with dynamic shared memory (Could decrease this to fit larger data)
+	sum_reduction <<<GRID_SIZE, TB_SIZE, n * sizeof(int)>>> (sum, data, n);
 
 	// Synchronize the kernel
 	cudaDeviceSynchronize();
 
 	//printf("Accumulated result is %d \n", sum[0]);
 	//scanf("Press enter to continue: ");
-	assert(*sum == 8192);
+    assert(*sum == 8192);
 
 	printf("COMPLETED SUCCESSFULLY\n");
 
