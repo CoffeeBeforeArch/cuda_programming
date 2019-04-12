@@ -56,8 +56,8 @@ int main() {
 	int BLOCK_SIZE = 256;
 
 	// Set grid size
-	int GRID_SIZE = (int)ceil(n / BLOCK_SIZE);
-
+	int GRID_SIZE = (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
+	
 	// Call CUDA kernel
 	// Uncomment these for pre-fetching 'a' and 'b' vectors to device
 	// cudaMemPrefetchAsync(a, bytes, id);
