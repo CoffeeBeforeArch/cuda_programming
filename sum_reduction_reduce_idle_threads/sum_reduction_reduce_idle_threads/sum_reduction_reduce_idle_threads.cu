@@ -1,5 +1,5 @@
 // This program performs sum reduction with an optimization
-// removing warp bank conflicts
+// that removes shared memory bank conflicts
 // By: Nick from CoffeeBeforeArch
 
 #include <cuda_runtime.h>
