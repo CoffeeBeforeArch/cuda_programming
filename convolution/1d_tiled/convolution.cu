@@ -16,6 +16,8 @@ using namespace std;
 __constant__ int mask[MASK_LENGTH];
 
 // 1-D convolution kernel
+// Some threads load multiple elements into shared memory
+// All threads compute 1 element in final array
 //  Arguments:
 //      array   = padded array
 //      result  = result array
@@ -27,22 +29,35 @@ __global__ void convolution_1d(int *array, int *result, int n){
     // Store all elements needed to compute output in shared memory
     extern __shared__ int s_array[];
 
-    // Calculate radius of the mask
+    // r: The number of padded elements on either side
     int r = MASK_LENGTH / 2;
 
-    // Calculate the starting point for the element
-    int start = tid - r;
+    // d: The total number of padded elements
+    int d = 2 * r;
+
+    // Size of the padded shared memory array
+    int n_padded = blockDim.x + d;
+
+    // Offset for the second set of loads
+    int offset = threadIdx.x + blockDim.x - r;
+
+    // Load the lower elements first starting at the halo
+    // This ensure divergence only once
+    s_array[threadIdx.x] = array[tid - r];
+    __syncthreads();
+
+    // Load in the remaining upper elements
+    if(offset < n_padded){
+        s_array[offset] = array[tid + offset];
+    }
+    __syncthreads();
 
     // Temp value for calculation
     int temp = 0;
     
     // Go over each element of the mask
     for(int j = 0; j < MASK_LENGTH; j++){
-        // Ignore elements that hang off (0s don't contribute)
-        if(((start + j) >= 0) && (start + j < n)){
-            // accumulate partial results
-            temp += array[start + j] * mask[j];
-        }
+        temp += s_array[threadIdx.x + j] * mask[j];
     }
 
     // Write-back the results
@@ -51,16 +66,11 @@ __global__ void convolution_1d(int *array, int *result, int n){
 
 // Verify the result on the CPU
 void verify_result(int *array, int *mask, int *result, int n){
-    int radius = MASK_LENGTH / 2;
     int temp;
-    int start;
     for(int i = 0; i < n; i++){
-        start = i - radius;
         temp = 0;
         for(int j = 0; j < MASK_LENGTH; j++){
-            if((start + j >= 0) && (start + j < n)){
-                temp += array[start + j] * mask[j];
-            }
+            temp += array[i + j] * mask[j];
         }
         assert(temp == result[i]);
     }
@@ -76,12 +86,22 @@ int main(){
     // Size of the mask in bytes
     size_t bytes_m = MASK_LENGTH * sizeof(int);
 
+    // Radius for padding the array
+    int r = MASK_LENGTH / 2;
+
+    // Size of the padded array in bytes
+    size_t bytes_p = (n + r * 2) * sizeof(int);
+
     // Allocate the array (include edge elements)...
-    int *h_array = new int[n];
+    int *h_array = new int[n + r * 2];
 
     // ... and initialize it
-    for(int i = 0; i < n; i++){
-        h_array[i] = rand() % 100;
+    for(int i = 0; i < (n + r * 2); i++){
+        if((i < r) || (i > n)){
+            h_array[i] = 0;
+        }else{
+            h_array[i] = rand() % 100;
+        }
     }
 
     // Allocate the mask and initialize it
@@ -95,14 +115,14 @@ int main(){
 
     // Allocate space on the device
     int *d_array, *d_result;
-    cudaMalloc(&d_array, bytes_n);
+    cudaMalloc(&d_array, bytes_p);
     cudaMalloc(&d_result, bytes_n);
 
     // Copy the data to the device
     cudaMemcpy(d_array, h_array, bytes_n, cudaMemcpyHostToDevice);
 
-    // Copy the data directly to the symbol
-    // Would require 2 API calls with cudaMemcpy
+    // Copy the mask directly to the symbol
+    // This would require 2 API calls with cudaMemcpy
     cudaMemcpyToSymbol(mask, h_mask, bytes_m);
 
     // Threads per TB
@@ -112,8 +132,8 @@ int main(){
     int GRID = (n + THREADS - 1) / THREADS;
 
     // Amount of space per-block for shared memory
-    // "MASK_LENGTH + 1" pads the array with elments that hang off
-    int SHMEM = THREADS + MASK_LENGTH - 1;
+    // This is padded by the overhanging radius on either side
+    int SHMEM = THREADS + 2 * r;
 
     // Call the kernel
     convolution_1d<<<GRID, THREADS, SHMEM>>>(d_array, d_result, n);
