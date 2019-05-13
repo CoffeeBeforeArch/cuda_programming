@@ -54,6 +54,12 @@ CUDA version: 10.0, 9.1
 | <a href=https://youtu.be/Qpx227w6idA>CUDA Crash Course: Sum Reduction Part 5</a> | Optimization, Device Function, Loop Unrolling | <a href=https://github.com/CoffeeBeforeArch/cuda_programming/blob/master/sumReduction/sum_reduction_device_function/sum_reduction_device_function/sum_reduction_device_function.cu>sum_reduction_device_function.cu</a>
 | <a href=https://youtu.be/dL6N0cdiMoU>CUDA Crash Course: Sum Reduction Part 6</a> | Cooperative Groups, Synchronization, Atomic Instructions | <a href=https://github.com/CoffeeBeforeArch/cuda_programming/blob/master/sumReduction/sum_reduction_cooperative_groups/sum_reduction_cooperative_groups/sum_reduction_cooperative_groups.cu>sum_reduction_cooperative_groups.cu</a> |
 
+# Convolution
+| Video | Concepts | Files |
+| ----- | -------- | ----- |
+|<a href=https://youtu.be/OlLquh9Lnbc>CUDA Crash Course: Naive 1-D Convolution</a> | 1-D Convolution | <a href=https://github.com/CoffeeBeforeArch/cuda_programming/blob/master/convolution/1d_naive/convolution.cu>convolution.cu</a> |
+|<a href=https://youtu.be/n7vtr2hCzoc>CUDA Crash Course: 1-D Convolution with Constant Memory </a> | Constant Memory, Constant Cache | <a href=https://github.com/CoffeeBeforeArch/cuda_programming/blob/master/convolution/1d_constant_memory/convolution.cu>convolution.cu</a> |
+
 # Misc. Topics
 | Video | Concepts | Files |
 | ----- | -------- | ----- |
