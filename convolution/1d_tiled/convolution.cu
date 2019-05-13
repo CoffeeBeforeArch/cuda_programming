@@ -103,14 +103,14 @@ int main(){
         if((i < r) || (i >= (n + r))){
             h_array[i] = 0;
         }else{
-            h_array[i] = 1;//rand() % 100;
+            h_array[i] = rand() % 100;
         }
     }
 
     // Allocate the mask and initialize it
     int *h_mask = new int[MASK_LENGTH];
     for(int i = 0; i < MASK_LENGTH; i++){
-        h_mask[i] = 1;//rand() % 10;
+        h_mask[i] = rand() % 10;
     }
 
     // Allocate space for the result
