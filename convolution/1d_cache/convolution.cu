@@ -29,30 +29,22 @@ __global__ void convolution_1d(int *array, int *result, int n){
     // Store all elements needed to compute output in shared memory
     extern __shared__ int s_array[];
 
-    // r: The number of padded elements on either side
-    int r = MASK_LENGTH / 2;
-
-    // i: offset index into global array
-    int i = tid + r;
-
     // Load elements from the main array into shared memory
-    // Use offset to allign load (original array is padded)
-    s_array[threadIdx.x] = array[i];
+    // This is naturally offset by "r" due to padding
+    s_array[threadIdx.x] = array[tid];
     
     __syncthreads();
 
     // Temp value for calculation
     int temp = 0;
 
-    // starting point for convolution
-    int start = threadIdx.x - r;
-
     // Go over each element of the mask
     for(int j = 0; j < MASK_LENGTH; j++){
         // Get the array value from the caches
-        if((start + j < 0) || (start + j > blockDim.x)) {
+        if((threadIdx.x + j) > blockDim.x) {
             temp += array[tid + j] * mask[j];
         // Get the value from shared memory
+        // Only the last warp will be diverged (given mask size)
         }else{
             temp += s_array[threadIdx.x + j] * mask[j];
         }
