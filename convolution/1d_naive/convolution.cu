@@ -114,5 +114,11 @@ int main(){
 
     cout << "COMPLETED SUCCESSFULLY" << endl;
 
+    // Free allocated memory on the device and host
+    delete [] h_array;
+    delete [] h_result;
+    delete [] h_mask;
+    cudaFree(d_result);
+
     return 0;
 }
