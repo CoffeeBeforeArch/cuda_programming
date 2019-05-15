@@ -41,7 +41,7 @@ __global__ void convolution_1d(int *array, int *result, int n){
     // Go over each element of the mask
     for(int j = 0; j < MASK_LENGTH; j++){
         // Get the array value from the caches
-        if((threadIdx.x + j) > blockDim.x) {
+        if((threadIdx.x + j) >= blockDim.x) {
             temp += array[tid + j] * mask[j];
         // Get the value from shared memory
         // Only the last warp will be diverged (given mask size)
