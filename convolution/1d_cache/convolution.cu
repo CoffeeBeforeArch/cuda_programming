@@ -6,7 +6,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <assert.h>
-#include <stdio.h>
+
 using namespace std;
 
 // Length of our convolution mask
