@@ -124,7 +124,7 @@ int main(){
 
     // Amount of space per-block for shared memory
     // This is padded by the overhanging radius on either side
-    size_t SHMEM = (THREADS + r * 2) * sizeof(int);
+    size_t SHMEM = THREADS * sizeof(int);
 
     // Call the kernel
     convolution_1d<<<GRID, THREADS, SHMEM>>>(d_array, d_result, n);
