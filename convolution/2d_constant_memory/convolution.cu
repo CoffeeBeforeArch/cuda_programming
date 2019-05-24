@@ -4,7 +4,7 @@
 #include <iostream>
 #include <assert.h>
 #include <stdlib.h>
-
+#include <stdio.h>
 using namespace std;
 
 // 7 x 7 convolutional mask
@@ -23,8 +23,8 @@ __constant__ int mask[7 * 7];
 //  N:      Dimensions of the matrices
 __global__ void convolution_2d(int *matrix, int *result, int N){
     // Calculate the global thread positions
-    int row = threadIdx.y * blockDim.y + gridDim.y;
-    int col = threadIdx.x * blockDim.x + gridDim.x;
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
 
     // Starting index for calculation
     int start_r = row - MASK_OFFSET;
@@ -35,19 +35,15 @@ __global__ void convolution_2d(int *matrix, int *result, int N){
 
     // Iterate over all the rows
     for(int i = 0; i < MASK_DIM; i++){
-        // Update the index
-        start_r += i;
-
-        // Range check
-        if(start_r > 0 && start_r < N){
-            // Go over each column
-            for(int j = 0; j < MASK_DIM; j++){
-                // Update the column index
-                start_c += j;
-
-                // Range check
-                if(start_c > 0 && start_c < N){
-                    temp += matrix[start_r * N + start_c] * mask[i * MASK_DIM + j];
+        // Go over each column
+         for(int j = 0; j < MASK_DIM; j++){
+            // Range check for rows
+             if((start_r + i) >= 0 && (start_r + i) < N){
+                // Range check for columns
+                if((start_c + j) >= 0 && (start_c + j) < N){
+                    // Accumulate result
+                    temp += matrix[(start_r + i) * N + (start_c + j)] *
+                        mask[i * MASK_DIM + j];
                 }
             }
         }
@@ -65,6 +61,53 @@ void init_matrix(int *m, int n){
     for(int i = 0; i < n; i++){
         for(int j = 0; j < n; j++){
             m[n * i + j] = rand() % 100;
+        }
+    }
+}
+
+// Verifies the 2D convolution result on the CPU
+// Takes:
+//  m:      Original matrix
+//  mask:   Convolutional mask
+//  result: Result from the GPU
+//  N:      Dimensions of the matrix
+void verify_result(int *m, int *mask, int *result, int N){
+    // Temp value for accumulating results
+    int temp;
+
+    // Intermediate value for more readable code
+    int offset_r;
+    int offset_c;
+
+    // Go over each row
+    for(int i = 0; i < N; i++){
+        // Go over each column
+        for(int j = 0; j < N; j++){
+            // Reset the temp variable
+            temp = 0;
+
+            // Go over each mask row
+            for(int k = 0; k < MASK_DIM; k++){
+                // Update offset value for row
+                offset_r = i - MASK_OFFSET + k;
+
+                // Go over each mask column
+                for(int l = 0; l < MASK_DIM; l++){
+                    // Update offset value for column
+                    offset_c = j - MASK_OFFSET + l;
+
+                    // Range checks if we are hanging off the matrix
+                    if(offset_r >= 0 && offset_r < N){
+                        if(offset_c >= 0 && offset_c < N){
+                            // Accumulate partial results
+                            temp += m[offset_r * N + offset_c] *
+                                mask[k * MASK_DIM + l];
+                        }
+                    }
+                }
+            }
+            // Fail if the results don't match
+            assert(result[i * N + j] == temp);
         }
     }
 }
@@ -106,9 +149,17 @@ int main(){
     dim3 block_dim(THREADS, THREADS);
     dim3 grid_dim(BLOCKS, BLOCKS);
 
+    // Perform 2D Convolution
     convolution_2d<<<grid_dim, block_dim>>>(d_matrix, d_result, N);
 
-    cudaMemcpy(result, d_result, bytes_m, cudaMemcpyDeviceToHost);
+    // Copy the result back to the CPU
+    cudaMemcpy(result, d_result, bytes_n, cudaMemcpyDeviceToHost);
+
+    // Functional test
+    verify_result(matrix, h_mask, result, N);
+
+    cout << "COMPLETED SUCCESSFULLY!" << endl;
 
     return 0;
 }
+
