@@ -4,7 +4,7 @@
 #include <iostream>
 #include <assert.h>
 #include <stdlib.h>
-#include <stdio.h>
+
 using namespace std;
 
 // 7 x 7 convolutional mask
