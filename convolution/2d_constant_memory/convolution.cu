@@ -160,6 +160,14 @@ int main(){
 
     cout << "COMPLETED SUCCESSFULLY!" << endl;
 
+    // Free the memory we allocated
+    delete [] matrix;
+    delete [] result;
+    delete [] h_mask;
+
+    cudaFree(d_matrix);
+    cudaFree(d_result);
+
     return 0;
 }
 
