@@ -78,11 +78,16 @@ int main(){
     // Write the data out for gnuplot
     ofstream output_file;
     output_file.open("histogram.dat", ios::out | ios::trunc);
-
     for(int i = 0; i < BINS; i++){
         output_file << h_result[i] << " \n\n";
     }
     output_file.close();
+
+    // Free memory
+    delete [] h_a;
+    delete [] h_result;
+    cudaFree(d_a);
+    cudaFree(d_result);
 
     return 0;
 }
