@@ -1,13 +1,15 @@
-// This program shows off a global memory implementation of a histogram
+// This program shows off a shared memory implementation of a histogram
 // kernel in CUDA
 // By: Nick from CoffeeBeforeArch
 
 #include <iostream>
 #include <stdlib.h>
+#include <fstream>
 
 // Number of bins for our plot
 #define BINS 7
 #define DIV ((26 + BINS - 1) / BINS)
+
 using namespace std;
 
 // GPU kernel for computing a histogram
@@ -18,11 +20,25 @@ using namespace std;
 __global__ void histogram(char *a, int *result, int N){
     // Calculate global thread ID
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    
-    // Calculate the bin positions where threads are grouped together
+  
+    // Allocate a local histogram for each TB
+    __shared__ int s_result[BINS];
+
+    // Initalize the shared memory to 0
+    if(threadIdx.x < BINS){
+        s_result[threadIdx.x] = 0;
+    }
+    __syncthreads();
+
+    // Calculate the bin positions locally
     for(int i = tid; i < N; i += (gridDim.x * blockDim.x)){
-        atomicAdd(&result[(a[i] - 'a') / DIV], 1);
-    } 
+        atomicAdd(&s_result[(a[i] - 'a') / DIV], 1);
+    }
+
+    // Combine the partial results
+    if(threadIdx.x < BINS){
+        atomicAdd(&result[threadIdx.x], s_result[threadIdx.x]);
+    }
 }
 
 // Initializes our input array
@@ -38,8 +54,8 @@ void init_array(char *a, int N){
 
 int main(){
     // Declare our problem size
-    int N = 1 << 18;
-    size_t bytes_n = N * sizeof(int);
+    int N = 1 << 20;
+    size_t bytes_n = N * sizeof(char);
 
     // Allocate memory on the host
     char *h_a = new char[N];
@@ -65,7 +81,7 @@ int main(){
     int THREADS = 512;
 
     // Calculate the number of threadblocks
-    int BLOCKS = N / THREADS / 4;
+    int BLOCKS = N / THREADS;
 
     // Launch the kernel
     histogram<<<BLOCKS, THREADS>>>(d_a, d_result, N);
@@ -73,9 +89,19 @@ int main(){
     // Copy the result back
     cudaMemcpy(h_result, d_result, bytes_r, cudaMemcpyDeviceToHost);
 
+    // Write the data out for gnuplot
+    ofstream output_file;
+    output_file.open("histogram.dat", ios::out | ios::trunc);
     for(int i = 0; i < BINS; i++){
-        cout << h_result[i] << " ";
+        output_file << h_result[i] << " \n\n";
     }
-    cout << endl;
+    output_file.close();
+
+    // Free memory
+    delete [] h_a;
+    delete [] h_result;
+    cudaFree(d_a);
+    cudaFree(d_result);
+
     return 0;
 }
