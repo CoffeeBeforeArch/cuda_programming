@@ -22,7 +22,10 @@ __global__ void histogram(char *a, int *result, int N){
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     
     // Calculate the bin positions where threads are grouped together
+    int alpha_position;
     for(int i = tid; i < N; i += (gridDim.x * blockDim.x)){
+        // Calculate the position in the alphabet
+        alpha_position = a[i] - 'a';
         atomicAdd(&result[(a[i] - 'a') / DIV], 1);
     } 
 }
@@ -40,7 +43,7 @@ void init_array(char *a, int N){
 
 int main(){
     // Declare our problem size
-    int N = 1 << 20;
+    int N = 1 << 4;
     size_t bytes_n = N * sizeof(char);
 
     // Allocate memory on the host
