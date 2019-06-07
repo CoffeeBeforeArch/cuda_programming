@@ -4,10 +4,12 @@
 
 #include <iostream>
 #include <stdlib.h>
+#include <fstream>
 
 // Number of bins for our plot
 #define BINS 7
 #define DIV ((26 + BINS - 1) / BINS)
+
 using namespace std;
 
 // GPU kernel for computing a histogram
@@ -38,8 +40,8 @@ void init_array(char *a, int N){
 
 int main(){
     // Declare our problem size
-    int N = 1 << 18;
-    size_t bytes_n = N * sizeof(int);
+    int N = 1 << 20;
+    size_t bytes_n = N * sizeof(char);
 
     // Allocate memory on the host
     char *h_a = new char[N];
@@ -65,7 +67,7 @@ int main(){
     int THREADS = 512;
 
     // Calculate the number of threadblocks
-    int BLOCKS = N / THREADS / 4;
+    int BLOCKS = N / THREADS;
 
     // Launch the kernel
     histogram<<<BLOCKS, THREADS>>>(d_a, d_result, N);
@@ -73,9 +75,14 @@ int main(){
     // Copy the result back
     cudaMemcpy(h_result, d_result, bytes_r, cudaMemcpyDeviceToHost);
 
+    // Write the data out for gnuplot
+    ofstream output_file;
+    output_file.open("histogram.dat", ios::out | ios::trunc);
+
     for(int i = 0; i < BINS; i++){
-        cout << h_result[i] << " ";
+        output_file << h_result[i] << " \n\n";
     }
-    cout << endl;
+    output_file.close();
+
     return 0;
 }
