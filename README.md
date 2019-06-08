@@ -61,6 +61,12 @@ CUDA version: 10.0, 9.1
 |<a href=https://youtu.be/n7vtr2hCzoc>CUDA Crash Course: 1-D Convolution with Constant Memory </a> | Constant Memory, Constant Cache | <a href=https://github.com/CoffeeBeforeArch/cuda_programming/blob/master/convolution/1d_constant_memory/convolution.cu>convolution.cu</a> |
 |<a href=https://youtu.be/pBB8mZRM91A>CUDA Crash Course: Tiled 1-D Convolution </a> | Shared Memory, Tiling | <a href=https://github.com/CoffeeBeforeArch/cuda_programming/blob/master/convolution/1d_tiled/convolution.cu>convolution.cu</a> |
 |<a href=https://youtu.be/miNGeE9ox20>CUDA Crash Course: 1-D Convolution Cache Simplification </a> | Shared Memory, Tiling, Programmability| <a href=https://github.com/CoffeeBeforeArch/cuda_programming/blob/master/convolution/1d_cache/convolution.cu>convolution.cu</a>
+|<a href=https://youtu.be/qxcfco89wvs>CUDA Crash Course: 2-D Convolution </a> | 2-D Convolution, Multi-Dimensional Thread Blocks | <a href=https://github.com/CoffeeBeforeArch/cuda_programming/blob/master/convolution/2d_constant_memory/convolution.cu>convolution.cu</a> |
+
+# Histogram
+| Video | Concepts | Files |
+| ----- | -------- | ----- |
+|<a href=https://youtu.be/v4DGiuU53h8>CUDA Crash Course: Optimizing Histogram Kernels </a> | Global Atomics, Shared Memory Atomics, Histograms, GNU Plot | <a href=https://github.com/CoffeeBeforeArch/cuda_programming/blob/master/histogram/global_mem/histogram.cu>histogram.cu</a><br><a href=https://github.com/CoffeeBeforeArch/cuda_programming/blob/master/histogram/shared_mem/histogram.cu>histogram.cu</a> |
 
 # Misc. Topics
 | Video | Concepts | Files |
