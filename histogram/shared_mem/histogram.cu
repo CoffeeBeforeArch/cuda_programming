@@ -88,7 +88,7 @@ int main(){
     int THREADS = 512;
 
     // Calculate the number of threadblocks
-    int BLOCKS = THREADS  / THREADS;
+    int BLOCKS = N / THREADS;
 
     // Launch the kernel
     histogram<<<BLOCKS, THREADS>>>(d_a, d_result, N);
