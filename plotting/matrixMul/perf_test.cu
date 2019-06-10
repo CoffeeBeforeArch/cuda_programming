@@ -11,7 +11,7 @@ int main(){
     int N = 10;
 
     // Upper bound of matrix size (2^16 by default)
-    int D = 1 << 14;
+    int D = 1 << 16;
 
     // Vector to get return average execution times
     vector<float> times;

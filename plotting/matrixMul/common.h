@@ -8,6 +8,9 @@
 // To store average execution times in
 #include <vector>
 
+// Lower bound of threads to launch
+#define LOWER_BOUND 256
+
 using namespace std;
 
 // Matrix initialization function
@@ -56,7 +59,7 @@ __global__ void naive_mmul(int *a, int *b, int *c, int N){
 //  vector<float> of average execution times
 vector<float> launch_naive_mmul(int D, int N){
     // Set static number of threads per threadblock
-    int BLOCK_DIM = 256;
+    int BLOCK_DIM = 16;
 
     // Grid size will be set each loop iteration
     int GRID_DIM;
@@ -81,7 +84,7 @@ vector<float> launch_naive_mmul(int D, int N){
     vector<float> times;
 
     // Increase the size of matrix by 2x each iterate
-    for(int i = BLOCK_DIM; i <= D; i *= 2){
+    for(int i = LOWER_BOUND; i <= D; i *= 2){
         // Re-initialize total_time each iteration
         total_time = 0;
 
