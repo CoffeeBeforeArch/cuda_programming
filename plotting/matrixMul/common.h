@@ -8,8 +8,15 @@
 // To store average execution times in
 #include <vector>
 
+// Headers to get Ale to shut up
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
+
 // Lower bound of threads to launch
 #define LOWER_BOUND 256
+
+// Static shmem calculation for convenience (Int 16x16 matrix)
+#define SHMEM_SIZE 256 * 4
 
 using namespace std;
 
@@ -50,6 +57,81 @@ __global__ void naive_mmul(int *a, int *b, int *c, int N){
     // Store the result in the output matrix
     c[row * N + col] = temp;
 }
+
+// Read-aligned matrix multiplication kernel
+// Takes:
+//  a:  Pointer to input matrix "a"
+//  b:  Pointer to input matrix "b"
+//  c:  Pointer to output matrix "c"
+//  N:  Dimensions of the matrix (assumed to be square)
+// Returns:
+//  NA
+__global__ void aligned_mmul(int *a, int *b, int *c, int n) {
+    // Row and column of the element of "c" this thread computes
+	int row = blockIdx.y * blockDim.y + threadIdx.y;
+	int col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    // Accumulate result in a temporary variable
+	int temp_sum = 0;
+	
+    // Iterate over row, and down column
+	for (int k = 0; k < n; k++) {
+	    // Accumulate result for a single element
+		temp_sum += a[k * n + row] * b[k * n + col];
+	}
+    
+    // Assign result
+	c[row * n + col] = temp_sum;
+}
+
+// Cache tiled matrix multiplication kernel
+// Takes:
+//  a:  Pointer to input matrix "a"
+//  b:  Pointer to input matrix "b"
+//  c:  Pointer to output matrix "c"
+//  N:  Dimensions of the matrix (assumed to be square)
+// Returns:
+//  NA
+__global__ void tiled_mmul(int *a, int *b, int *c, int N) {
+	// Two statically-sized pieces of shared memory
+	__shared__ int A[SHMEM_SIZE];
+	__shared__ int B[SHMEM_SIZE];
+
+	// Shorten these parameters for clean re-use
+	int tx = threadIdx.x;
+	int ty = threadIdx.y;
+	int bx = blockIdx.x;
+	int by = blockIdx.y;
+
+	// Calculate global row and column positions for this thread
+	int row = by * blockDim.y + ty;
+	int col = bx * blockDim.x + tx;
+
+	// Intermediate sum for element being written
+	int temp_val = 0;
+
+	// Sweep tiles over entire matrix
+	for (int i = 0; i < (N / blockDim.x); i++) {
+		// Load sub-matrices into shared memory
+        A[(ty * blockDim.x) + tx] = a[row * N + (i * blockDim.x + tx)];
+		B[(ty * blockDim.x) + tx] = b[(i * blockDim.x * N + ty * N) + col];
+
+		// Ensure all threads have loaded their data before proceeding
+		__syncthreads();
+
+		// Calculate all temp values for this tile
+		for (int j = 0; j < blockDim.x; j++) {
+			temp_val += A[(ty * blockDim.x) + j] * B[(j * blockDim.x) + tx];
+		}
+
+		// Ensure some threads don't progress and stomp current shared memory values
+		__syncthreads();
+	}
+	
+    // Write back to the result matrix
+    c[row * N + col] = temp_val;
+}
+
 
 // Launches the naive matrix multiplication kernel
 // Takes:
@@ -111,7 +193,10 @@ vector<float> launch_naive_mmul(int D, int N){
         for(int j = 0; j < N; j++){
             // Profile the start and end time of each kernel launch
             cudaEventRecord(start);
+            // Uncomment which implementation you would like to profile
             naive_mmul<<<grid, block>>>(d_a, d_b, d_c, i);
+            //aligned_mmul<<<grid, block>>>(d_a, d_b, d_c, i);
+            //tiled_mmul<<<grid, block>>>(d_a, d_b, d_c, i);
             cudaEventRecord(stop);
         
             // Make sure the cuda kernel gets launched
@@ -140,3 +225,4 @@ vector<float> launch_naive_mmul(int D, int N){
 
     return times;
 }
+
