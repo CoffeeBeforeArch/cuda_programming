@@ -11,16 +11,19 @@ int main(){
     int N = 10;
 
     // Upper bound of matrix size (2^16 by default)
-    int D = 1 << 16;
+    int D = 1 << 14;
 
     // Vector to get return average execution times
     vector<float> times;
 
     // Get execution time for naive implementation
-    times = launch_naive_mmul(D, N);
+    times = launch_mmul(D, N);
 
+    // Write out the times to a data file
+    ofstream output_file;
+    output_file.open("timing.dat", ios::out | ios::trunc);
     for(auto i : times){
-        cout << i << endl;
+        output_file << i << "\n"; 
     }
 
     return 0;

@@ -75,9 +75,9 @@ __global__ void aligned_mmul(int *a, int *b, int *c, int n) {
 	int temp_sum = 0;
 	
     // Iterate over row, and down column
-	for (int k = 0; k < n; k++) {
+	for (int i = 0; i < n; i++) {
 	    // Accumulate result for a single element
-		temp_sum += a[k * n + row] * b[k * n + col];
+		temp_sum += a[i * n + row] * b[i * n + col];
 	}
     
     // Assign result
@@ -139,7 +139,7 @@ __global__ void tiled_mmul(int *a, int *b, int *c, int N) {
 //  N: Number if iterations to average over:
 // Returns:
 //  vector<float> of average execution times
-vector<float> launch_naive_mmul(int D, int N){
+vector<float> launch_mmul(int D, int N){
     // Set static number of threads per threadblock
     int BLOCK_DIM = 16;
 
