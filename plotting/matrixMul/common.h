@@ -166,7 +166,7 @@ vector<float> launch_mmul(int D, int N){
     vector<float> times;
 
     // Increase the size of matrix by 2x each iterate
-    for(int i = LOWER_BOUND; i <= D; i *= 2){
+    for(int i = LOWER_BOUND; i <= D; i += 128){
         // Re-initialize total_time each iteration
         total_time = 0;
 
@@ -194,9 +194,9 @@ vector<float> launch_mmul(int D, int N){
             // Profile the start and end time of each kernel launch
             cudaEventRecord(start);
             // Uncomment which implementation you would like to profile
-            naive_mmul<<<grid, block>>>(d_a, d_b, d_c, i);
+            //naive_mmul<<<grid, block>>>(d_a, d_b, d_c, i);
             //aligned_mmul<<<grid, block>>>(d_a, d_b, d_c, i);
-            //tiled_mmul<<<grid, block>>>(d_a, d_b, d_c, i);
+            tiled_mmul<<<grid, block>>>(d_a, d_b, d_c, i);
             cudaEventRecord(stop);
         
             // Make sure the cuda kernel gets launched

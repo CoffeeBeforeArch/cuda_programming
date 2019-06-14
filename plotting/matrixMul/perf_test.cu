@@ -10,8 +10,8 @@ int main(){
     // Number of iterations to run per-kernel (10 by default)
     int N = 10;
 
-    // Upper bound of matrix size (2^16 by default)
-    int D = 1 << 14;
+    // Upper bound of matrix size (2^14 by default)
+    int D = 1 << 12;
 
     // Vector to get return average execution times
     vector<float> times;
