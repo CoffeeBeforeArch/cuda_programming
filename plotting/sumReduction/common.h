@@ -14,7 +14,8 @@
 
 using namespace std;
 
-#define SIZE 256
+#define LOWER_BOUND 256
+#define BLOCK_DIM 256
 #define SHMEM_SIZE 256 * 4
 
 // Array initalization function
@@ -25,11 +26,11 @@ using namespace std;
 //  NA
 void init_array(int *a, int N) {
     for (int i = 0; i < N; i++) {
-        a[i] = 1;//rand() % 10;
+        a[i] = rand() % 10;
     }
 }
 
-__global__ void sum_reduction(int *a, int *result) {
+__global__ void sum_reduction_1(int *a, int *result, int N) {
 	// Calculate thread ID
 	int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -61,7 +62,7 @@ __global__ void sum_reduction(int *a, int *result) {
 //  D: Upper bound of vector size
 // Returns:
 //  NA
-vector<float> launch_perf_test(int N, int D){
+vector<float> launch_perf_test(int D, int N){
     // Grid size will be set each loop iteration
     int GRID_DIM;
 
@@ -69,7 +70,7 @@ vector<float> launch_perf_test(int N, int D){
     int *h_a, *h_result;
 
     // Device pointers
-    int *d_a, d_result;
+    int *d_a, *d_result;
 
     // Start and stop event times
     cudaEvent_t start;
@@ -85,12 +86,12 @@ vector<float> launch_perf_test(int N, int D){
     vector<float> times;
 
     // Increase the size of matrix by 2x each iterate
-    for(int i = LOWER_BOUND; i <= D; i += 128){
+    for(int i = LOWER_BOUND; i <= D; i *= 2){
         // Re-initialize total_time each iteration
         total_time = 0;
 
         // Allocate space for each matrix 
-        h_a = new int[i * i];
+        h_a = new int[i];
         h_result = new int[i];
         cudaMalloc(&d_a, i * sizeof(int));
         cudaMalloc(&d_result, i * sizeof(int));
@@ -101,21 +102,17 @@ vector<float> launch_perf_test(int N, int D){
 
         // Calculate grid dimension and create launch parameters
         GRID_DIM = i / BLOCK_DIM;
-        dim3 grid(GRID_DIM, GRID_DIM);
-        dim3 block(BLOCK_DIM, BLOCK_DIM);
 
         // Average execution time for "N" kernel runs
         for(int j = 0; j < N; j++){
             // Profile the start and end time of each kernel launch
             cudaEventRecord(start);
             // Uncomment which implementation you would like to profile
-            //naive_mmul<<<grid, block>>>(d_a, d_b, d_c, i);
-            //aligned_mmul<<<grid, block>>>(d_a, d_b, d_c, i);
-            tiled_mmul<<<grid, block>>>(d_a, d_b, d_c, i);
+            sum_reduction_1<<<GRID_DIM, BLOCK_DIM>>>(d_a, d_result, i);
             cudaEventRecord(stop);
         
             // Make sure the cuda kernel gets launched
-            cudaMemcpy(h_c, d_c, i * i * sizeof(int), cudaMemcpyDeviceToHost);
+            cudaMemcpy(h_result, d_result, i * sizeof(int), cudaMemcpyDeviceToHost);
             
             // Synchronize on the event that goes to default stream 0
             cudaEventSynchronize(stop);
@@ -132,12 +129,11 @@ vector<float> launch_perf_test(int N, int D){
 
         // Free memory each iteration
         delete [] h_a;
-        delete [] h_b;
+        delete [] h_result;
         cudaFree(d_a);
-        cudaFree(d_b);
-        cudaFree(d_c);
+        cudaFree(d_result);
     }
 
     return times;
-
 }
+
