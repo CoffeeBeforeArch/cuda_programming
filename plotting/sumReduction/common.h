@@ -113,6 +113,34 @@ __global__ void sum_reduction_3(int *a, int *result) {
 	}
 }
 
+__global__ void sum_reduction_4(int *a, int *result) {
+	// Allocate shared memory
+	__shared__ int partial_sum[SHMEM_SIZE];
+
+	// Load elements AND do first add of reduction
+	// Vector now 2x as long as number of threads, so scale i
+	int i = blockIdx.x * (blockDim.x * 2) + threadIdx.x;
+
+	// Store first partial result instead of just the elements
+	partial_sum[threadIdx.x] = a[i] + a[i + blockDim.x];
+	__syncthreads();
+
+	// Start at 1/2 block stride and divide by two each iteration
+	for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+		// Each thread does work unless it is further than the stride
+		if (threadIdx.x < s) {
+			partial_sum[threadIdx.x] += partial_sum[threadIdx.x + s];
+		}
+		__syncthreads();
+	}
+
+	// Let the thread 0 for this block write it's result to main memory
+	// Result is inexed by this block
+	if (threadIdx.x == 0) {
+		result[blockIdx.x] = partial_sum[0];
+	}
+}
+
 // Launches perf test for sum reduction kernel
 // Takes:
 //  N: Number of iterations
@@ -167,7 +195,8 @@ vector<float> launch_perf_test(int D, int N){
             // Uncomment which implementation you would like to profile
             //sum_reduction_1<<<GRID_DIM, BLOCK_DIM>>>(d_a, d_result);
             //sum_reduction_2<<<GRID_DIM, BLOCK_DIM>>>(d_a, d_result);
-            sum_reduction_3<<<GRID_DIM, BLOCK_DIM>>>(d_a, d_result);
+            //sum_reduction_3<<<GRID_DIM, BLOCK_DIM>>>(d_a, d_result);
+            sum_reduction_4<<<GRID_DIM / 2, BLOCK_DIM>>>(d_a, d_result);
             cudaEventRecord(stop);
         
             // Make sure the cuda kernel gets launched
