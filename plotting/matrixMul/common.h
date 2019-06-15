@@ -133,7 +133,7 @@ __global__ void tiled_mmul(int *a, int *b, int *c, int N) {
 }
 
 
-// Launches the naive matrix multiplication kernel
+// Launches performance test for matrix multiplication kernel
 // Takes:
 //  D: Upper bound of square matrix dimension to test
 //  N: Number if iterations to average over:
