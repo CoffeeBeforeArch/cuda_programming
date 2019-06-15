@@ -30,7 +30,7 @@ void init_array(int *a, int N) {
     }
 }
 
-__global__ void sum_reduction_1(int *a, int *result, int N) {
+__global__ void sum_reduction_1(int *a, int *result) {
 	// Calculate thread ID
 	int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -41,7 +41,7 @@ __global__ void sum_reduction_1(int *a, int *result, int N) {
 	partial_sum[threadIdx.x] = a[tid];
 	__syncthreads();
 
-	// Iterate of log base 2 the block dimension
+	// Iterate log base two the block dimension times
 	for (int s = 1; s < blockDim.x; s *= 2) {
 		// Reduces active threads by half each iterations
         if (threadIdx.x % (2 * s) == 0) {
@@ -55,6 +55,37 @@ __global__ void sum_reduction_1(int *a, int *result, int N) {
 		result[blockIdx.x] = partial_sum[0];
 	}
 }
+
+__global__ void sum_reduction_2(int *a, int *result) {
+	// Calculate thread ID
+	int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+	// Allocate shared memory
+	__shared__ int partial_sum[SHMEM_SIZE];
+
+	// Load elements into shared memory
+	partial_sum[threadIdx.x] = a[tid];
+	__syncthreads();
+
+	// Iterate log base two the block dimension times
+	for (int s = 1; s < blockDim.x; s *= 2) {
+		// Change the indexing to be sequential threads
+		int index = 2 * s * threadIdx.x;
+
+		// Each thread does work unless the index goes off the block
+		if (index < blockDim.x) {
+			partial_sum[index] += partial_sum[index + s];
+		}
+		__syncthreads();
+	}
+
+	// Let the thread 0 for this block write it's result to main memory
+	// Result is inexed by this block
+	if (threadIdx.x == 0) {
+		result[blockIdx.x] = partial_sum[0];
+	}
+}
+
 
 // Launches perf test for sum reduction kernel
 // Takes:
@@ -108,7 +139,8 @@ vector<float> launch_perf_test(int D, int N){
             // Profile the start and end time of each kernel launch
             cudaEventRecord(start);
             // Uncomment which implementation you would like to profile
-            sum_reduction_1<<<GRID_DIM, BLOCK_DIM>>>(d_a, d_result, i);
+            //sum_reduction_1<<<GRID_DIM, BLOCK_DIM>>>(d_a, d_result);
+            sum_reduction_2<<<GRID_DIM, BLOCK_DIM>>>(d_a, d_result);
             cudaEventRecord(stop);
         
             // Make sure the cuda kernel gets launched
