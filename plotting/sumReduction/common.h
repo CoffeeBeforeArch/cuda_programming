@@ -141,6 +141,46 @@ __global__ void sum_reduction_4(int *a, int *result) {
 	}
 }
 
+// Unroll last loop iteration
+__device__ void warpReduce(volatile int* shmem_ptr, int t) {
+	shmem_ptr[t] += shmem_ptr[t + 32];
+	shmem_ptr[t] += shmem_ptr[t + 16];
+	shmem_ptr[t] += shmem_ptr[t + 8];
+	shmem_ptr[t] += shmem_ptr[t + 4];
+	shmem_ptr[t] += shmem_ptr[t + 2];
+	shmem_ptr[t] += shmem_ptr[t + 1];
+}
+
+__global__ void sum_reduction_5(int *a, int *result) {
+	// Allocate shared memory
+	__shared__ int partial_sum[SHMEM_SIZE];
+
+	// Load elements AND do first add of reduction
+	int i = blockIdx.x * (blockDim.x * 2) + threadIdx.x;
+
+	// Store first partial result instead of just the elements
+	partial_sum[threadIdx.x] = a[i] + a[i + blockDim.x];
+	__syncthreads();
+
+	// Start at 1/2 block stride and divide by two each iteration
+	// Stop early (call device function instead)
+	for (int s = blockDim.x / 2; s > 32; s >>= 1) {
+		// Each thread does work unless it is further than the stride
+		if (threadIdx.x < s) {
+			partial_sum[threadIdx.x] += partial_sum[threadIdx.x + s];
+		}
+		__syncthreads();
+	}
+
+	if (threadIdx.x < 32) {
+		warpReduce(partial_sum, threadIdx.x);
+	}
+
+	if (threadIdx.x == 0) {
+		result[blockIdx.x] = partial_sum[0];
+	}
+}
+
 // Launches perf test for sum reduction kernel
 // Takes:
 //  N: Number of iterations
@@ -196,7 +236,8 @@ vector<float> launch_perf_test(int D, int N){
             //sum_reduction_1<<<GRID_DIM, BLOCK_DIM>>>(d_a, d_result);
             //sum_reduction_2<<<GRID_DIM, BLOCK_DIM>>>(d_a, d_result);
             //sum_reduction_3<<<GRID_DIM, BLOCK_DIM>>>(d_a, d_result);
-            sum_reduction_4<<<GRID_DIM / 2, BLOCK_DIM>>>(d_a, d_result);
+            //sum_reduction_4<<<GRID_DIM / 2, BLOCK_DIM>>>(d_a, d_result);
+            sum_reduction_5<<<GRID_DIM / 2, BLOCK_DIM>>>(d_a, d_result);
             cudaEventRecord(stop);
         
             // Make sure the cuda kernel gets launched
