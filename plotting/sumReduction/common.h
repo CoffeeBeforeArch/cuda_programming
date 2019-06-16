@@ -30,6 +30,12 @@ void init_array(int *a, int N) {
     }
 }
 
+// Baseline sum reduction implementation
+// Takes:
+//  a:      Input array
+//  result: Output array
+// Returns:
+//  NA
 __global__ void sum_reduction_1(int *a, int *result) {
 	// Calculate thread ID
 	int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -56,6 +62,12 @@ __global__ void sum_reduction_1(int *a, int *result) {
 	}
 }
 
+// Sum reduction implementation that uses sequential threads
+// Takes:
+//  a:      Input array
+//  result: Output array
+// Returns:
+//  NA
 __global__ void sum_reduction_2(int *a, int *result) {
 	// Calculate thread ID
 	int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -86,6 +98,12 @@ __global__ void sum_reduction_2(int *a, int *result) {
 	}
 }
 
+// Sum reduction implementation that reduces bank conflicts
+// Takes:
+//  a:      Input array
+//  result: Output array
+// Returns:
+//  NA
 __global__ void sum_reduction_3(int *a, int *result) {
 	// Calculate thread ID
 	int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -113,6 +131,12 @@ __global__ void sum_reduction_3(int *a, int *result) {
 	}
 }
 
+// Sum reduction implementation that packs extra work per-thread
+// Takes:
+//  a:      Input array
+//  result: Output array
+// Returns:
+//  NA
 __global__ void sum_reduction_4(int *a, int *result) {
 	// Allocate shared memory
 	__shared__ int partial_sum[SHMEM_SIZE];
@@ -151,6 +175,12 @@ __device__ void warpReduce(volatile int* shmem_ptr, int t) {
 	shmem_ptr[t] += shmem_ptr[t + 1];
 }
 
+// Sum reduction implementations that unrolls the final loop iteration
+// Takes:
+//  a:      Input array
+//  result: Output array
+// Returns:
+//  NA
 __global__ void sum_reduction_5(int *a, int *result) {
 	// Allocate shared memory
 	__shared__ int partial_sum[SHMEM_SIZE];
