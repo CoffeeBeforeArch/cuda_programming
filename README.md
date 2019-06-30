@@ -5,8 +5,6 @@ This repository contains all code from the YouTube series "GPGPU Programming wit
 
 Suggestions for specific content can be sent to: CoffeeBeforeArch@gmail.com
 
-An up to date list on all series is available at: <a href="https://docs.google.com/spreadsheets/d/1cV4nuP-ZflfeGUn0Ay0w-ZKJrh9CqDEKvBJqCNMlTxI/edit?usp=sharing">Google Sheets</a>
-
 ## Environment 
 Operating System: Windows 10 & Ubuntu 18.04
 
