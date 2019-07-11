@@ -28,7 +28,7 @@ int main(){
     // "kernels" specifies this is offloaded to the accelerator
     // "copyin" specifies data to copy in a single direction to the device
     // "copy" specifies a two-way copy
-    #pragma acc kernels copyin(a[0:N*N], b[0:N*N]) copy(c[0:N*N])
+    #pragma acc kernels copyin(a[0:N*N], b[0:N*N]), copy(c[0:N*N])
     {
         // All outer loops are independent
         #pragma acc loop independent
