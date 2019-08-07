@@ -65,22 +65,14 @@ __global__ void tiledMatrixMul(int *a, int *b, int *c, int n, int tile_size) {
 }
 
 void check_answer(int *a, int *b, int *c, int n) {
-	int *verify_c;
-	verify_c = (int*)malloc(n * n * sizeof(int));
-	int temp_val;
+	int tmp;
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
-			temp_val = 0;
+			tmp = 0;
 			for (int k = 0; k < n; k++) {
-				 temp_val += a[i * n + k] * b[k * n + j];
+				 tmp += a[i * n + k] * b[k * n + j];
 			}
-			verify_c[i * n + j] = temp_val;
-		}
-	}
-
-	for (int i = 0; i < n; i++) {
-		for (int j = 0; j < n; j++) {
-			assert(c[i * n + j] == verify_c[i * n + j]);
+            assert(tmp == c[i * n + j]);
 		}
 	}
 }
