@@ -3,10 +3,9 @@
 
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <stdio.h>
-#include <math.h>
-#include <assert.h>
+#include <cassert>
 #include <iostream>
 
 // CUDA kernel for vector addition

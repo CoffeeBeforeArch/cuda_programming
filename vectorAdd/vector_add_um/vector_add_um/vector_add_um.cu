@@ -4,9 +4,8 @@
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <assert.h>
+#include <cstdlib>
+#include <cassert>
 
 __global__ void vectorAddUM(int *a, int *b, int *c, int n) {
 	// Calculate global thread id
