@@ -40,7 +40,7 @@ int main(){
     // Allocate host memory (make sure C is zeroed)
     float *h_a = (float*)malloc(bytes);
     float *h_b = (float*)malloc(bytes);
-    float *h_c = (float*)calloc(N * N, sizeof(float));
+    float *h_c = (float*)malloc(bytes);
     
     // Allocate device memory
     float *d_a, *d_b, *d_c;
