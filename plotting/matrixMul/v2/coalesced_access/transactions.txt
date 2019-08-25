@@ -1,0 +1,9 @@
+==3698== NVPROF is profiling process 3698, command: ./mmul
+==3698== Profiling application: ./mmul
+==3698== Profiling result:
+==3698== Metric result:
+Invocations                               Metric Name                        Metric Description         Min         Max         Avg
+Device "Quadro GV100 (0)"
+    Kernel: matrixMul(float*, float*, float*, int)
+          1                    dram_read_transactions           Device Memory Read Transactions  3.2523e+10  3.2523e+10  3.2523e+10
+          1                   dram_write_transactions          Device Memory Write Transactions    33642453    33642453    33642453
