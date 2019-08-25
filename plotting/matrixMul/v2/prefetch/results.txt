@@ -1,0 +1,17 @@
+==5631== NVPROF is profiling process 5631, command: ./mmul
+==5631== Profiling application: ./mmul
+==5631== Profiling result:
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+ GPU activities:   72.95%  4.87239s         1  4.87239s  4.87239s  4.87239s  matrixMul(float*, float*, float*, int)
+                   14.31%  955.89ms         1  955.89ms  955.89ms  955.89ms  [CUDA memcpy DtoH]
+                   12.73%  850.42ms         3  283.47ms  264.96ms  307.00ms  [CUDA memcpy HtoD]
+      API calls:   95.19%  6.68128s         4  1.67032s  265.26ms  5.83002s  cudaMemcpy
+                    4.75%  333.22ms         3  111.07ms  1.4890ms  330.23ms  cudaMalloc
+                    0.05%  3.4077ms         2  1.7038ms  449.50us  2.9582ms  cuDeviceTotalMem
+                    0.02%  1.0538ms       194  5.4320us     838ns  173.49us  cuDeviceGetAttribute
+                    0.00%  188.02us         1  188.02us  188.02us  188.02us  cudaLaunchKernel
+                    0.00%  81.228us         2  40.614us  38.833us  42.395us  cuDeviceGetName
+                    0.00%  8.4510us         2  4.2250us  3.5620us  4.8890us  cuDeviceGetPCIBusId
+                    0.00%  5.4480us         4  1.3620us     908ns  2.0950us  cuDeviceGet
+                    0.00%  3.9810us         3  1.3270us     838ns  1.7460us  cuDeviceGetCount
+                    0.00%  2.0250us         2  1.0120us     908ns  1.1170us  cuDeviceGetUuid
