@@ -18,12 +18,14 @@ __global__ void matrixMul(int *a, int *b, int *c, int N){
         // Each thread computes one element
         int tmp = 0;
         for(int i = 0; i < N; i += 4){
+            // Threads on the same row all access the same elements
             int4 a_tmp = reinterpret_cast<int4*>(&a[row * N + i])[0];
+            
+            // Compute 4 results per iterations
             tmp += a_tmp.x * b[i * N + col];
             tmp += a_tmp.y * b[(i + 1) * N + col];
             tmp += a_tmp.z * b[(i + 2) * N + col];
             tmp += a_tmp.w * b[(i + 3) * N + col];
-            //tmp += a[row * N + i] * b[i * N + col];
         }
 
         // Write back the tmp result
