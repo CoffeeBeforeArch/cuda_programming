@@ -2,6 +2,7 @@
 // By: Nick from CoffeeBeforeArch
 
 #include <cstdlib>
+#include <cassert>
 
 // Matrix Multiplication kernel
 // Optimizations:
@@ -34,6 +35,20 @@ __global__ void matrixMul(int *a, int *b, int *c, int N){
 void init_matrix(int *m, int N){
     for(int i = 0; i < N * N; i++){
         m[i] = rand() % 100;
+    }
+}
+
+// Verify result (only needs to be run once to ensure functional
+// correctness)
+void verify_result(int *a, int *b, int *c, int N){
+    int tmp = 0;
+    for(int i = 0; i < N; i++){
+        for(int j = 0; j < N; j++){
+            for(int k = 0; k < N; k++){
+                tmp += a[i * N + k] * b[k * N + j];
+            }
+            assert(c[i * N + j] == tmp);
+        }
     }
 }
 
@@ -73,6 +88,9 @@ int main(){
     
     // Copy data back to the host
     cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);
+
+    // Verify the result (comment out after confirmed)
+    //verify_result(h_a, h_b, h_c, N);
 
     return 0;
 }

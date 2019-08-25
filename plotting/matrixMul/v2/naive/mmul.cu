@@ -2,6 +2,7 @@
 // By: Nick from CoffeeBeforeArch
 
 #include <cstdlib>
+#include <cassert>
 
 // Matrix Multiplication kernel
 // Optimizations:
@@ -76,6 +77,9 @@ int main(){
     
     // Copy data back to the host
     cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);
+    
+    // Verify the result (comment out after confirmed)
+    //verify_result(h_a, h_b, h_c, N);
 
     return 0;
 }

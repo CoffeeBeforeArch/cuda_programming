@@ -1,9 +1,0 @@
-==5810== NVPROF is profiling process 5810, command: ./mmul
-==5810== Profiling application: ./mmul
-==5810== Profiling result:
-==5810== Metric result:
-Invocations                               Metric Name                        Metric Description         Min         Max         Avg
-Device "Quadro GV100 (0)"
-    Kernel: matrixMul(int*, int*, int*, int)
-          1                    dram_read_transactions           Device Memory Read Transactions  1.8763e+10  1.8763e+10  1.8763e+10
-          1                   dram_write_transactions          Device Memory Write Transactions    33642366    33642366    33642366
