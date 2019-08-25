@@ -36,10 +36,10 @@ int main(){
     int N = 1 << 14;
     size_t bytes = N * N * sizeof(float);
 
-    // Allocate host memory (make sure C is zeroed)
+    // Allocate host memory
     float *h_a = (float*)malloc(bytes);
     float *h_b = (float*)malloc(bytes);
-    float *h_c = (float*)calloc(N * N, sizeof(float));
+    float *h_c = (float*)malloc(bytes);
     
     // Allocate device memory
     float *d_a, *d_b, *d_c;
@@ -54,7 +54,6 @@ int main(){
     // Copy the matrices over
     cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
     cudaMemcpy(d_b, h_b, bytes, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_c, h_c, bytes, cudaMemcpyHostToDevice);
 
     // Set up the CTA and Grid Dimensions
     int threads = 16;
