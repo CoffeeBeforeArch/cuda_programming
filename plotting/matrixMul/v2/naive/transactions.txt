@@ -4,6 +4,6 @@
 ==1860== Metric result:
 Invocations                               Metric Name                        Metric Description         Min         Max         Avg
 Device "Quadro GV100 (0)"
-    Kernel: matrixMul(float*, float*, float*, int)
+    Kernel: matrixMul(int*, int*, int*, int)
           1                    dram_read_transactions           Device Memory Read Transactions  3.7168e+10  3.7168e+10  3.7168e+10
           1                   dram_write_transactions          Device Memory Write Transactions    33643530    33643530    33643530

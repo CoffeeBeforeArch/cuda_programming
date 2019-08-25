@@ -5,7 +5,7 @@
 
 // Matrix Multiplication kernel
 // Optimizations:
-__global__ void matrixMul(float *a, float *b, float *c, int N){
+__global__ void matrixMul(int *a, int *b, int *c, int N){
     // Calculate the row and column for each thread
     int row = blockIdx.y * blockDim.y + threadIdx.y; 
     int col = blockIdx.x * blockDim.x + threadIdx.x;
@@ -20,24 +20,38 @@ __global__ void matrixMul(float *a, float *b, float *c, int N){
 }
 
 // Initialize a matrix with random numbers
-void init_matrix(float *m, int N){
+void init_matrix(int *m, int N){
     for(int i = 0; i < N * N; i++){
         m[i] = rand() % 100;
+    }
+}
+
+// Verify result (only needs to be run once to ensure functional
+// correctness)
+void verify_result(int *a, int *b, int *c, int N){
+    int tmp = 0;
+    for(int i = 0; i < N; i++){
+        for(int j = 0; j < N; j++){
+            for(int k = 0; k < N; k++){
+                tmp += a[i * N + k] * b[k * N + j];
+            }
+            assert(c[i * N + j] == tmp);
+        }
     }
 }
 
 int main(){
     // Problem size
     int N = 1 << 14;
-    size_t bytes = N * N * sizeof(float);
+    size_t bytes = N * N * sizeof(int);
 
     // Allocate host memory (make sure C is zeroed)
-    float *h_a = (float*)malloc(bytes);
-    float *h_b = (float*)malloc(bytes);
-    float *h_c = (float*)calloc(N * N, sizeof(float));
+    int *h_a = (int*)malloc(bytes);
+    int *h_b = (int*)malloc(bytes);
+    int *h_c = (int*)calloc(N * N, sizeof(int));
     
     // Allocate device memory
-    float *d_a, *d_b, *d_c;
+    int *d_a, *d_b, *d_c;
     cudaMalloc(&d_a, bytes);
     cudaMalloc(&d_b, bytes);
     cudaMalloc(&d_c, bytes);

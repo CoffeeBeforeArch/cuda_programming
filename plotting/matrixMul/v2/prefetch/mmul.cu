@@ -7,7 +7,7 @@
 // Optimizations:
 //  Accumulate partial results in a temporary variable
 //  Ensure all threads in warps access consecutive memory
-__global__ void matrixMul(float *a, float *b, float *c, int N){
+__global__ void matrixMul(int *a, int *b, int *c, int N){
     // Calculate the row and column for each thread
     int row = blockIdx.y * blockDim.y + threadIdx.y; 
     int col = blockIdx.x * blockDim.x + threadIdx.x;
@@ -17,7 +17,7 @@ __global__ void matrixMul(float *a, float *b, float *c, int N){
         // Each thread computes one element
         int tmp = 0;
         for(int i = 0; i < N; i += 4){
-            float4 a_tmp = reinterpret_cast<float4*>(&a[row * N + i])[0];
+            int4 a_tmp = reinterpret_cast<int4*>(&a[row * N + i])[0];
             tmp += a_tmp.x * b[i * N + col];
             tmp += a_tmp.y * b[(i + 1) * N + col];
             tmp += a_tmp.z * b[(i + 2) * N + col];
@@ -31,7 +31,7 @@ __global__ void matrixMul(float *a, float *b, float *c, int N){
 }
 
 // Initialize a matrix with random numbers
-void init_matrix(float *m, int N){
+void init_matrix(int *m, int N){
     for(int i = 0; i < N * N; i++){
         m[i] = rand() % 100;
     }
@@ -40,15 +40,15 @@ void init_matrix(float *m, int N){
 int main(){
     // Problem size
     int N = 1 << 14;
-    size_t bytes = N * N * sizeof(float);
+    size_t bytes = N * N * sizeof(int);
 
     // Allocate host memory (make sure C is zeroed)
-    float *h_a = (float*)malloc(bytes);
-    float *h_b = (float*)malloc(bytes);
-    float *h_c = (float*)malloc(bytes);
+    int *h_a = (int*)malloc(bytes);
+    int *h_b = (int*)malloc(bytes);
+    int *h_c = (int*)malloc(bytes);
     
     // Allocate device memory
-    float *d_a, *d_b, *d_c;
+    int *d_a, *d_b, *d_c;
     cudaMalloc(&d_a, bytes);
     cudaMalloc(&d_b, bytes);
     cudaMalloc(&d_c, bytes);

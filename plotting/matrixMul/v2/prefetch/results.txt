@@ -2,7 +2,7 @@
 ==5631== Profiling application: ./mmul
 ==5631== Profiling result:
             Type  Time(%)      Time     Calls       Avg       Min       Max  Name
- GPU activities:   72.95%  4.87239s         1  4.87239s  4.87239s  4.87239s  matrixMul(float*, float*, float*, int)
+ GPU activities:   72.95%  4.87239s         1  4.87239s  4.87239s  4.87239s  matrixMul(int*, int*, int*, int)
                    14.31%  955.89ms         1  955.89ms  955.89ms  955.89ms  [CUDA memcpy DtoH]
                    12.73%  850.42ms         3  283.47ms  264.96ms  307.00ms  [CUDA memcpy HtoD]
       API calls:   95.19%  6.68128s         4  1.67032s  265.26ms  5.83002s  cudaMemcpy
