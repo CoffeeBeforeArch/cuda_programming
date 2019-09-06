@@ -141,6 +141,7 @@ int main(){
     delete [] h_array;
     delete [] h_result;
     delete [] h_mask;
+    cudaFree(d_array);
     cudaFree(d_result);
 
     return 0;
