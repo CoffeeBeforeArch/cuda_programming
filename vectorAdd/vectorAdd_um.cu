@@ -59,15 +59,15 @@ int main() {
 	
 	// Call CUDA kernel
 	// Uncomment these for pre-fetching 'a' and 'b' vectors to device
-	// cudaMemPrefetchAsync(a, bytes, id);
-	// cudaMemPrefetchAsync(b, bytes, id);
+	cudaMemPrefetchAsync(a, bytes, id);
+	cudaMemPrefetchAsync(b, bytes, id);
 	vectorAddUM <<<GRID_SIZE, BLOCK_SIZE>>> (a, b, c, n);
 	
 	// Wait for all previous operations before using values
 	cudaDeviceSynchronize();
 
 	// Uncomment this for pre-fetching 'c' to the host 
-	// cudaMemPrefetchAsync(c, bytes, cudaCpuDeviceId);
+	cudaMemPrefetchAsync(c, bytes, cudaCpuDeviceId);
 
 	// Check result
 	check_answer(a, b, c, n);
