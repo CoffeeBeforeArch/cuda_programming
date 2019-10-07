@@ -1,5 +1,5 @@
 # GPGPU Programming with CUDA
-This repository contains all code from the YouTube series "GPGPU Programming with CUDA" by CoffeeBeforeArch.
+This repository contains all code from the YouTube series "CUDA Crash Course" by CoffeeBeforeArch.
 
 ## Contact
 
