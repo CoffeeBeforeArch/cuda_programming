@@ -4,78 +4,84 @@
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
+#include <array>
+#include <algorithm>
+#include <iterator>
+
+using std::begin;
+using std::end;
+using std::copy;
+using std::generate;
+using std::array;
+using std::cout;
+using std::endl;
 
 // CUDA kernel for vector addition
+// __global__ means this is called from the CPU, and runs on the GPU
 __global__ void vectorAdd(int* a, int* b, int* c, int N) {
-  // Calculate global thread ID (tid)
+  // Calculate global thread ID
   int tid = (blockIdx.x * blockDim.x) + threadIdx.x;
-  // Vector boundary guard
+  
+  // Boundary check
   if (tid < N) {
     // Each thread adds a single element
     c[tid] = a[tid] + b[tid];
   }
 }
 
-// Initialize vector of size n to int between 0-99
-void vector_init(int* a, int n) {
-  for (int i = 0; i < n; i++) {
-    a[i] = rand() % 100;
-  }
-}
-
 // Check vector add result
-void check_answer(int* a, int* b, int* c, int n) {
-  for (int i = 0; i < n; i++) {
+// Templatize this to handle multiple array inputs
+template <size_t SIZE>
+void verify_result(array<int, SIZE>a, array<int, SIZE> b, array<int, SIZE> c) {
+  for(int i = 0; i < SIZE; i++){
     assert(c[i] == a[i] + b[i]);
   }
 }
 
 int main() {
   // Vector size of 2^16 (65536 elements)
-  int N = 1 << 16;
+  const int N = 1 << 16;
   size_t bytes = sizeof(int) * N;
 
-  // Allocate host memory
-  // Host vector pointers
-  int *h_a, *h_b, *h_c;
-  h_a = new int[N];
-  h_b = new int[N];
-  h_c = new int[N];
+  // Arrays for holding the host-side (cpu-side) data
+  array<int, N> a;
+  array<int, N> b;
+  array<int, N> c;
 
-  // Allocate device memory
-  // Device vector pointers
+  // Initialize random numbers in each array
+  generate(begin(a), end(a), [] () { return rand() % 100; });
+  generate(begin(b), end(b), [] () { return rand() % 100; });
+
+  // Allocate memory on the device
   int *d_a, *d_b, *d_c;
   cudaMalloc(&d_a, bytes);
   cudaMalloc(&d_b, bytes);
   cudaMalloc(&d_c, bytes);
 
-  // Initialize vectors a and b with random values between 0 and 99
-  vector_init(h_a, N);
-  vector_init(h_b, N);
+  // Copy data from the host to the device (cpu -> gpu)
+  cudaMemcpy(d_a, a.data(), bytes, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_b, b.data(), bytes, cudaMemcpyHostToDevice);
 
-  // Copy data from
-  cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
-  cudaMemcpy(d_b, h_b, bytes, cudaMemcpyHostToDevice);
+  // Threads per CTA (1024 threads per CTA)
+  int NUM_THREADS = 1 << 10;
 
-  // Threadblock size
-  int NUM_THREADS = 256;
-
-  // Grid size
+  // CTAs per Grid
   int NUM_BLOCKS = (N + NUM_THREADS - 1) / NUM_THREADS;
 
-  // Launch kernel on default stream w/o shmem
+  // Launch the kernel on the GPU
+  // Kernel calls are asynchronous (the CPU program continues execution after
+  // call, but no necessarily before the kernel finishes)
   vectorAdd<<<NUM_BLOCKS, NUM_THREADS>>>(d_a, d_b, d_c, N);
 
   // Copy sum vector from device to host
-  cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);
+  // cudaMemcpy is a synchronous operation, and waits for the prior kernel
+  // launch to complete (both go to the default stream in this case).
+  // Therefore, this cudaMemcpy acts as both a memcpy and synchronization
+  // barrier.
+  cudaMemcpy(c.data(), d_c, bytes, cudaMemcpyDeviceToHost);
 
   // Check result for errors
-  check_answer(h_a, h_b, h_c, N);
-
-  // Free memory on host
-  delete[] h_a;
-  delete[] h_b;
-  delete[] h_c;
+  verify_result<a.size()>(a, b, c);
 
   // Free memory on device
   cudaFree(d_a);
