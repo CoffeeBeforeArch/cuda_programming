@@ -2,85 +2,85 @@
 // By: Nick from CoffeeBeforeArch
 
 #include <stdio.h>
-#include <cstdlib>
 #include <cassert>
+#include <cstdlib>
 
 // CUDA kernel for vector addition
 // No change when using CUDA unified memory
 __global__ void vectorAdd(int *a, int *b, int *c, int N) {
-	// Calculate global thread thread ID
-	int tid = (blockDim.x * blockIdx.x) + threadIdx.x;
+  // Calculate global thread thread ID
+  int tid = (blockDim.x * blockIdx.x) + threadIdx.x;
 
-	// Boundary check
-	if (tid < N) {
-		c[tid] = a[tid] + b[tid];
-	}
+  // Boundary check
+  if (tid < N) {
+    c[tid] = a[tid] + b[tid];
+  }
 }
 
 // Initialize an array with random numbers
 void init_array(int *a, int N) {
-	for (int i = 0; i < N; i++) {
-		a[i] = rand() % 100;
-	}
+  for (int i = 0; i < N; i++) {
+    a[i] = rand() % 100;
+  }
 }
 
 // Verify the result on the CPU
 void verify_result(int *a, int *b, int *c, int N) {
-	for (int i = 0; i < N; i++) {
-		assert(c[i] == a[i] + b[i]);
-	}
+  for (int i = 0; i < N; i++) {
+    assert(c[i] == a[i] + b[i]);
+  }
 }
 
 int main() {
   // Array size of 2^16 (65536 elements)
-	const int N = 1 << 16;
-	size_t bytes = N * sizeof(int);
-	
-	// Declare unified memory pointers
-	int *a, *b, *c;
+  const int N = 1 << 16;
+  size_t bytes = N * sizeof(int);
 
-	// Allocation memory for these pointers
-	cudaMallocManaged(&a, bytes);
-	cudaMallocManaged(&b, bytes);
-	cudaMallocManaged(&c, bytes);
+  // Declare unified memory pointers
+  int *a, *b, *c;
 
-	// Initialize vectors
-	init_array(a, N);
-	init_array(b, N);
-	
+  // Allocation memory for these pointers
+  cudaMallocManaged(&a, bytes);
+  cudaMallocManaged(&b, bytes);
+  cudaMallocManaged(&c, bytes);
+
+  // Initialize vectors
+  init_array(a, N);
+  init_array(b, N);
+
   // Threads per CTA (1024 threads per CTA)
-	int BLOCK_SIZE = 1 << 10;
+  int BLOCK_SIZE = 1 << 10;
 
   // CTAs per Grid
-	int GRID_SIZE = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
-	
-	// Get the device ID for prefetching calls
-	int id = cudaGetDevice(&id);
+  int GRID_SIZE = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
-	// Pre-fetch 'a' and 'b' arrays to the specified device (GPU)
-	cudaMemPrefetchAsync(a, bytes, id);
-	cudaMemPrefetchAsync(b, bytes, id);
-	
+  // Get the device ID for prefetching calls
+  int id = cudaGetDevice(&id);
+
+  // Pre-fetch 'a' and 'b' arrays to the specified device (GPU)
+  cudaMemPrefetchAsync(a, bytes, id);
+  cudaMemPrefetchAsync(b, bytes, id);
+
   // Call CUDA kernel
-	vectorAddUM <<<GRID_SIZE, BLOCK_SIZE>>> (a, b, c, N);
-	
-	// Wait for all previous operations before using values
+  vectorAddUM<<<GRID_SIZE, BLOCK_SIZE>>>(a, b, c, N);
+
+  // Wait for all previous operations before using values
   // We need this because we don't get the implicit synchronization of
   // cudaMemcpy like in the original example
-	cudaDeviceSynchronize();
+  cudaDeviceSynchronize();
 
-	// Pre-fetch 'c' to the host (CPU) 
-	cudaMemPrefetchAsync(c, bytes, cudaCpuDeviceId);
+  // Pre-fetch 'c' to the host (CPU)
+  cudaMemPrefetchAsync(c, bytes, cudaCpuDeviceId);
 
-	// Verify the result on the CPU
-	verify_result(a, b, c, N);
+  // Verify the result on the CPU
+  verify_result(a, b, c, N);
 
   // Free unified memory (same as memory allocated with cudaMalloc)
   cudaFree(a);
   cudaFree(b);
   cudaFree(c);
 
-	printf("COMPLETED SUCCESSFULLY\n");
-	
-	return 0;
+  printf("COMPLETED SUCCESSFULLY\n");
+
+  return 0;
 }
