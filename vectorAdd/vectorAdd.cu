@@ -39,11 +39,11 @@ void verify_result(array<int, SIZE>a, array<int, SIZE> b, array<int, SIZE> c) {
 }
 
 int main() {
-  // Vector size of 2^16 (65536 elements)
+  // Array size of 2^16 (65536 elements)
   const int N = 1 << 16;
   size_t bytes = sizeof(int) * N;
 
-  // Arrays for holding the host-side (cpu-side) data
+  // Arrays for holding the host-side (CPU-side) data
   array<int, N> a;
   array<int, N> b;
   array<int, N> c;
@@ -58,7 +58,7 @@ int main() {
   cudaMalloc(&d_b, bytes);
   cudaMalloc(&d_c, bytes);
 
-  // Copy data from the host to the device (cpu -> gpu)
+  // Copy data from the host to the device (CPU -> GPU)
   cudaMemcpy(d_a, a.data(), bytes, cudaMemcpyHostToDevice);
   cudaMemcpy(d_b, b.data(), bytes, cudaMemcpyHostToDevice);
 
@@ -66,6 +66,9 @@ int main() {
   int NUM_THREADS = 1 << 10;
 
   // CTAs per Grid
+  // We need to launch at LEAST as many threads as we have elements
+  // This equation pads an extra CTA to the grid if N cannot evenly be divided
+  // by NUM_THREADS (e.g. N = 1025, NUM_THREADS = 1024)
   int NUM_BLOCKS = (N + NUM_THREADS - 1) / NUM_THREADS;
 
   // Launch the kernel on the GPU

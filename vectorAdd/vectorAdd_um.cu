@@ -1,43 +1,40 @@
 // This program computer the sum of two N-element vectors using unified memory
 // By: Nick from CoffeeBeforeArch
 
-#include <cuda_runtime.h>
-#include <device_launch_parameters.h>
 #include <stdio.h>
 #include <cstdlib>
 #include <cassert>
 
-__global__ void vectorAddUM(int *a, int *b, int *c, int n) {
-	// Calculate global thread id
+// CUDA kernel for vector addition
+// No change when using CUDA unified memory
+__global__ void vectorAdd(int *a, int *b, int *c, int N) {
+	// Calculate global thread thread ID
 	int tid = (blockDim.x * blockIdx.x) + threadIdx.x;
 
 	// Boundary check
-	if (tid < n) {
+	if (tid < N) {
 		c[tid] = a[tid] + b[tid];
 	}
 }
 
-void vector_init(int *a, int n) {
-	for (int i = 0; i < n; i++) {
+// Initialize an array with random numbers
+void init_array(int *a, int N) {
+	for (int i = 0; i < N; i++) {
 		a[i] = rand() % 100;
 	}
 }
 
-void check_answer(int *a, int *b, int *c, int n) {
-	for (int i = 0; i < n; i++) {
+// Verify the result on the CPU
+void verify_result(int *a, int *b, int *c, int N) {
+	for (int i = 0; i < N; i++) {
 		assert(c[i] == a[i] + b[i]);
 	}
 }
 
 int main() {
-	// Get the device ID for other CUDA calls
-	int id = cudaGetDevice(&id);
-
-	// Declare number of elements per-array
-	int n = 1 << 16;
-
-	// Size of each arrays in bytes
-	size_t bytes = n * sizeof(int);
+  // Array size of 2^16 (65536 elements)
+	const int N = 1 << 16;
+	size_t bytes = N * sizeof(int);
 	
 	// Declare unified memory pointers
 	int *a, *b, *c;
@@ -48,34 +45,40 @@ int main() {
 	cudaMallocManaged(&c, bytes);
 
 	// Initialize vectors
-	vector_init(a, n);
-	vector_init(b, n);
+	init_array(a, N);
+	init_array(b, N);
 	
-	// Set threadblock size
-	int BLOCK_SIZE = 256;
+  // Threads per CTA (1024 threads per CTA)
+	int BLOCK_SIZE = 1 << 10;
 
-	// Set grid size
-	int GRID_SIZE = (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
+  // CTAs per Grid
+	int GRID_SIZE = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
 	
-	// Call CUDA kernel
-	// Uncomment these for pre-fetching 'a' and 'b' vectors to device
+	// Get the device ID for prefetching calls
+	int id = cudaGetDevice(&id);
+
+	// Pre-fetch 'a' and 'b' arrays to the specified device (GPU)
 	cudaMemPrefetchAsync(a, bytes, id);
 	cudaMemPrefetchAsync(b, bytes, id);
-	vectorAddUM <<<GRID_SIZE, BLOCK_SIZE>>> (a, b, c, n);
+	
+  // Call CUDA kernel
+	vectorAddUM <<<GRID_SIZE, BLOCK_SIZE>>> (a, b, c, N);
 	
 	// Wait for all previous operations before using values
+  // We need this because we don't get the implicit synchronization of
+  // cudaMemcpy like in the original example
 	cudaDeviceSynchronize();
 
-	// Uncomment this for pre-fetching 'c' to the host 
+	// Pre-fetch 'c' to the host (CPU) 
 	cudaMemPrefetchAsync(c, bytes, cudaCpuDeviceId);
 
-	// Check result
-	check_answer(a, b, c, n);
+	// Verify the result on the CPU
+	verify_result(a, b, c, N);
 
-    // Free unified memory
-    cudaFree(a);
-    cudaFree(b);
-    cudaFree(c);
+  // Free unified memory (same as memory allocated with cudaMalloc)
+  cudaFree(a);
+  cudaFree(b);
+  cudaFree(c);
 
 	printf("COMPLETED SUCCESSFULLY\n");
 	
