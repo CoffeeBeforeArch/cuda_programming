@@ -2,13 +2,13 @@
 // By: Nick from CoffeeBeforeArch
 
 #include <algorithm>
-#include <array>
+#include <vector>
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
 #include <iterator>
 
-using std::array;
+using std::vector;
 using std::begin;
 using std::copy;
 using std::cout;
@@ -30,23 +30,21 @@ __global__ void vectorAdd(int* a, int* b, int* c, int N) {
 }
 
 // Check vector add result
-// Templatize this to handle multiple array inputs
-template <size_t SIZE>
-void verify_result(array<int, SIZE> a, array<int, SIZE> b, array<int, SIZE> c) {
-  for (int i = 0; i < SIZE; i++) {
+void verify_result(vector<int> a, vector<int> b, vector<int> c) {
+  for (int i = 0; i < a.size(); i++) {
     assert(c[i] == a[i] + b[i]);
   }
 }
 
 int main() {
   // Array size of 2^16 (65536 elements)
-  const int N = 1 << 16;
+  constexpr int N = 1 << 16;
   size_t bytes = sizeof(int) * N;
 
-  // Arrays for holding the host-side (CPU-side) data
-  array<int, N> a;
-  array<int, N> b;
-  array<int, N> c;
+  // Vectors for holding the host-side (CPU-side) data
+  vector<int> a;
+  vector<int> b;
+  vector<int> c;
 
   // Initialize random numbers in each array
   generate(begin(a), end(a), []() { return rand() % 100; });
@@ -84,7 +82,7 @@ int main() {
   cudaMemcpy(c.data(), d_c, bytes, cudaMemcpyDeviceToHost);
 
   // Check result for errors
-  verify_result<a.size()>(a, b, c);
+  verify_result(a, b, c);
 
   // Free memory on device
   cudaFree(d_a);
