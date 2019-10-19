@@ -1,125 +1,107 @@
-// This program computes a naive version of matrix multiplication
+// This program computes a simple version of matrix multiplication
 // By: Nick from CoffeeBeforeArch
 
-#include <cuda_runtime.h>
-#include <device_launch_parameters.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <assert.h>
+#include <cstdlib>
+#include <cassert>
+#include <iostream>
+#include <algorithm>
+#include <vector>
+#include <functional>
 
-__global__ void matrixMul(int *a, int *b, int *c, int n) {
-	// Compute each thread's row
+using std::cout;
+using std::endl;
+using std::generate;
+using std::vector;
+
+__global__ void matrixMul(int *a, int *b, int *c, int N) {
+	// Compute each thread's global row and column
 	int row = blockIdx.y * blockDim.y + threadIdx.y;
-	// Compute each thread's column
 	int col = blockIdx.x * blockDim.x + threadIdx.x;
 
-	int temp_sum = 0;
-	// Boundary protection
-	if ((row < n) && (col < n)) {
+	// Boundary check
+	if ((row < N) && (col < N)) {
 		// Iterate over row, and down column
-		for (int k = 0; k < n; k++) {
+	  int tmp = 0;
+		for (int k = 0; k < N; k++) {
 			// Accumulate result for a single element
-			temp_sum += a[row * n + k] * b[k * n + col];
+			tmp += a[row * N + k] * b[k * N + col];
 		}
-		// Assign result
-		c[row * n + col] = temp_sum;
-	}
 
-}
-
-// Initialization function for matrices
-void matrix_init(int *a, int n) {
-	for (int i = 0; i < n; i++) {
-		for (int j = 0; j < n; j++) {
-			a[i * n + j] = rand() % 100;
-		}
+		// Write back the results
+		c[row * N + col] = tmp;
 	}
 }
 
-// Check result
-void check_answer(int *a, int *b, int *c, int n) {
-	int *verify_c;
-	verify_c = (int*)malloc(n * n * sizeof(int));
-	int temp_sum;
-	for (int i = 0; i < n; i++) {
-		for (int j = 0; j < n; j++) {
-			temp_sum = 0;
-			for (int k = 0; k < n; k++) {
-				temp_sum += a[i * n + k] * b[k * n + j];
-			}
-			verify_c[i * n + j] = temp_sum;
-		}
-	}
+// Check result on the CPU
+void verify_result(vector<int> &a, vector<int> &b, vector<int> &c, int N) {
+  // For every row...
+  for(int i = 0; i < N; i++){
+    // For every column...
+    for(int j = 0; j < N; j++){
+      // For every element in the row-column pair
+      int tmp = 0;
+      for(int k = 0; k < N; k++){
+        // Accumulate the partial results
+        tmp += a[i * N + k] * b[k * N + j];
+      }
 
-	for (int i = 0; i < n; i++) {
-		for (int j = 0; j < n; j++) {
-			assert(c[i * n + j] == verify_c[i * n + j]);
-		}
-	}
+      // Check against the CPU result
+      assert(tmp == c[i * N + j]);
+    }
+  }
 }
 
 int main() {
 	// Matrix size of 1024 x 1024;
-	int n = 1 << 10;
+	int N = 1 << 10;
 
 	// Size (in bytes) of matrix
-	size_t bytes = n * n * sizeof(int);
+	size_t bytes = N * N * sizeof(int);
 
-	// Host pointers
-	int *h_a, *h_b, *h_c;
+	// Host vectors
+  vector<int> h_a(N * N);
+  vector<int> h_b(N * N);
+  vector<int> h_c(N * N);
 
-	// Allocate host memory
-	h_a = (int*)malloc(bytes);
-	h_b = (int*)malloc(bytes);
-	h_c = (int*)malloc(bytes);
+	// Initialize matrices
+  generate(h_a.begin(), h_a.end(), [](){ return rand() % 100; });
+  generate(h_b.begin(), h_b.end(), [](){ return rand() % 100; });
 
-	// Device pointers
+	// Allocate device memory
 	int *d_a, *d_b, *d_c;
-
-	// Allocated device memory
 	cudaMalloc(&d_a, bytes);
 	cudaMalloc(&d_b, bytes);
 	cudaMalloc(&d_c, bytes);
 
-	// Initialize matrices
-	matrix_init(h_a, n);
-	matrix_init(h_b, n);
-
 	// Copy data to the device
-	cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_b, h_b, bytes, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_a, h_a.data(), bytes, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_b, h_b.data(), bytes, cudaMemcpyHostToDevice);
 
-	// Threads per block
-	int BLOCK_SIZE = 16;
+	// Threads per CTA dimension
+	int THREADS = 32;
 
-	// Blocks in each dimension (No padding)
-	int GRID_SIZE = n / BLOCK_SIZE;
+	// Blocks per grid dimension
+	int BLOCKS = (N + THREADS - 1 ) / THREADS;
 
-	// Use dim3 objects
-	dim3 grid(GRID_SIZE, GRID_SIZE);
-	dim3 threads(BLOCK_SIZE, BLOCK_SIZE);
+	// Use dim3 structs for block  and grid dimensions
+	dim3 threads(THREADS, THREADS);
+	dim3 grid(BLOCKS, BLOCKS);
 
 	// Launch kernel
-	matrixMul <<<grid, threads >>> (d_a, d_b, d_c, n);
+	matrixMul <<<grid, threads >>> (d_a, d_b, d_c, N);
 
 	// Copy back to the host
-	cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);
+	cudaMemcpy(h_c.data(), d_c, bytes, cudaMemcpyDeviceToHost);
 
 	// Check result
-	check_answer(h_a, h_b, h_c, n);
-
-    // Free memory on host
-    free(h_a);
-    free(h_b);
-    free(h_c);
-
-    // Free memory on device
-    cudaFree(d_a);
-    cudaFree(d_b);
-    cudaFree(d_c);
+	verify_result(h_a, h_b, h_c, N);
 
 	printf("COMPLETED SUCCESSFULLY\n");
-
+  
+  // Free memory on device
+  cudaFree(d_a);
+  cudaFree(d_b);
+  cudaFree(d_c);
+  
 	return 0;
 }
