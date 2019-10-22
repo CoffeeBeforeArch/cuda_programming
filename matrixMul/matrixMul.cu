@@ -14,22 +14,19 @@ using std::generate;
 using std::vector;
 
 __global__ void matrixMul(int *a, int *b, int *c, int N) {
-	// Compute each thread's global row and column
+	// Compute each thread's global row and column index
 	int row = blockIdx.y * blockDim.y + threadIdx.y;
 	int col = blockIdx.x * blockDim.x + threadIdx.x;
 
-	// Boundary check
-	if ((row < N) && (col < N)) {
-		// Iterate over row, and down column
-	  int tmp = 0;
-		for (int k = 0; k < N; k++) {
-			// Accumulate result for a single element
-			tmp += a[row * N + k] * b[k * N + col];
-		}
-
-		// Write back the results
-		c[row * N + col] = tmp;
+	// Iterate over row, and down column
+	int tmp = 0;
+	for (int k = 0; k < N; k++) {
+	  // Accumulate results for a single element
+	  tmp += a[row * N + k] * b[k * N + col];
 	}
+
+	// Write back the results
+	c[row * N + col] = tmp;
 }
 
 // Check result on the CPU
@@ -80,15 +77,15 @@ int main() {
 	// Threads per CTA dimension
 	int THREADS = 32;
 
-	// Blocks per grid dimension
-	int BLOCKS = (N + THREADS - 1 ) / THREADS;
+	// Blocks per grid dimension (assumes THREADS divides N evenly)
+	int BLOCKS = N / THREADS;
 
 	// Use dim3 structs for block  and grid dimensions
 	dim3 threads(THREADS, THREADS);
-	dim3 grid(BLOCKS, BLOCKS);
+	dim3 blocks(BLOCKS, BLOCKS);
 
 	// Launch kernel
-	matrixMul <<<grid, threads >>> (d_a, d_b, d_c, N);
+	matrixMul<<<blocks, threads>>>(d_a, d_b, d_c, N);
 
 	// Copy back to the host
 	cudaMemcpy(h_c.data(), d_c, bytes, cudaMemcpyDeviceToHost);

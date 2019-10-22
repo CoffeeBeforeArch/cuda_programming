@@ -1,17 +1,21 @@
 // This program is an optimized version of matrix multiplication
 // By: Nick from CoffeeBeforeArch
 
-#include <cuda_runtime.h>
-#include <device_launch_parameters.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-#include <math.h>
+#include <cstdlib>
+#include <cassert>
+#include <iostream>
+#include <algorithm>
+#include <vector>
 
-// Static shmem calculation for convenience (Int 16x16 matrix)
-#define SHMEM_SIZE 16 * 16 * 4
+using std::cout;
+using std::endl;
+using std::generate;
+using std::vector;
 
-__global__ void tiledMatrixMul(int *a, int *b, int *c, int n, int tile_size) {
+// Static shmem calculation for convenience (Int 32x32 matrix)
+#define SHMEM_SIZE 32 * 32
+
+__global__ void matrixMul(int *a, int *b, int *c, int N) {
 	// Two statically-sized pieces of shared memory
 	__shared__ int A[SHMEM_SIZE];
 	__shared__ int B[SHMEM_SIZE];
@@ -22,15 +26,18 @@ __global__ void tiledMatrixMul(int *a, int *b, int *c, int n, int tile_size) {
 	int bx = blockIdx.x;
 	int by = blockIdx.y;
 
+  // Square tiles, so this could be blockDim.y as well
+  int tile_size = blockDim.x;
+
 	// Calculate global row and column positions for this thread
 	int row = by * tile_size + ty;
 	int col = bx * tile_size + tx;
 
 	// Intermediate sum for element being written
-	int temp_val = 0;
+	int tmp = 0;
 
 	// Sweep tiles over entire matrix
-	for (int i = 0; i < (n / tile_size); i++) {
+	for (int i = 0; i < (N / tile_size); i++) {
 		/*
 			Every thread in a threadblock loads one element into shared memory
 			The element location in shared memory corresponds to the thread's
@@ -39,113 +46,99 @@ __global__ void tiledMatrixMul(int *a, int *b, int *c, int n, int tile_size) {
 
 			Explanation of indexing parameters
 			For A:
-				        row*n: Indexes the global row for this thread (loop-invariant)
+				        row*N: Indexes the global row for this thread (loop-invariant)
 				  i*tile_size: Indexes the new set of columns each iteration
 				           tx: Indexes the column within that set
 			for B:
-				i*tile_size*n: Indexes the next set of rows each iteration
-				         ty*n: Indexes the row within that set
-						  col: Indexes the global column (loop-invariant)
+				i*tile_size*N: Indexes the next set of rows each iteration
+				         ty*N: Indexes the row within that set
+						      col: Indexes the global column (loop-invariant)
 		*/
-		A[(ty * tile_size) + tx] = a[row * n + (i * tile_size + tx)];
-		B[(ty * tile_size) + tx] = b[(i * tile_size * n + ty * n) + col];
+		A[ty * tile_size + tx] = a[(row * N) + (i * tile_size + tx)];
+		B[ty * tile_size + tx] = b[(i * tile_size * N + ty * N) + col];
 
 		// Ensure all threads have loaded their data before proceeding
 		__syncthreads();
 
 		// Calculate all temp values for this tile
 		for (int j = 0; j < tile_size; j++) {
-			temp_val += A[(ty * tile_size) + j] * B[(j * tile_size) + tx];
+			tmp += A[(ty * tile_size) + j] * B[(j * tile_size) + tx];
 		}
 
 		// Ensure some threads don't progress and stomp current shared memory values
 		__syncthreads();
 	}
-	c[(row * n) + col] = temp_val;
+
+  // Write back the result
+	c[row * N + col] = tmp;
 }
 
-void check_answer(int *a, int *b, int *c, int n) {
-	int tmp;
-	for (int i = 0; i < n; i++) {
-		for (int j = 0; j < n; j++) {
-			tmp = 0;
-			for (int k = 0; k < n; k++) {
-				 tmp += a[i * n + k] * b[k * n + j];
+// Functional test for our program
+void verify_result(vector<int> &a, vector<int> &b, vector<int> &c, int N) {
+	// For every row...
+  for (int i = 0; i < N; i++) {
+    // For every column...
+		for (int j = 0; j < N; j++) {
+      // For every element in the row/col pair...
+			int tmp = 0;
+			for (int k = 0; k < N; k++) {
+        // Accumulate the partial results
+				tmp += a[i * N + k] * b[k * N + j];
 			}
-            assert(tmp == c[i * n + j]);
-		}
-	}
-}
 
-void init_matrix(int *a, int n) {
-	for (int i = 0; i < n; i++) {
-		for (int j = 0; j < n; j++) {
-			a[i * n + j] = rand() % 10;
+      // Kill the program if something was wrong
+      assert(tmp == c[i * N + j]);
 		}
 	}
 }
 
 int main() {
 	// Problem size = 1024 x 1024 matrix
-	int n = 1 << 10;
-
-	// Matrix size (in bytes)
-	size_t bytes = n * n * sizeof(int);
+	constexpr int N = 1 << 10;
+	size_t bytes = N * N * sizeof(int);
 
 	// Host matrix pointers
-	int *h_a, *h_b, *h_c;
+  vector<int> h_a(N * N);
+  vector<int> h_b(N * N);
+  vector<int> h_c(N * N);
 
-	// Device matrix pointers
+	// Initialize matrices
+	generate(h_a.begin(), h_a.end(), [](){ return rand() % 100; });
+	generate(h_b.begin(), h_b.end(), [](){ return rand() % 100; });
+	
+  // Allocate device memory
 	int *d_a, *d_b, *d_c;
-
-	// Allocate host memory
-	h_a = (int*)malloc(bytes);
-	h_b = (int*)malloc(bytes);
-	h_c = (int*)malloc(bytes);
-
-	// Allocate device memory
 	cudaMalloc(&d_a, bytes);
 	cudaMalloc(&d_b, bytes);
 	cudaMalloc(&d_c, bytes);
 
-	// Initialize matrices
-	init_matrix(h_a, n);
-	init_matrix(h_b, n);
-
 	// Copy matrices to the device
-	cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_b, h_b, bytes, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_a, h_a.data(), bytes, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_b, h_b.data(), bytes, cudaMemcpyHostToDevice);
 
-	// Threads per block (in both x and y dimensions)
-	int BLOCK_SIZE = 16;
-
-	// Blocks in each dimension
-	int GRID_SIZE = (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
+	// Set the CTA and Grid dimensions
+	int THREADS = 32;
+	int BLOCKS = N / THREADS;
 
 	// Use dim3 objects for 2-D grids and threadblocks
-	dim3 grid(GRID_SIZE, GRID_SIZE);
-	dim3 threads(BLOCK_SIZE, BLOCK_SIZE);
+	dim3 threads(THREADS, THREADS);
+	dim3 blocks(BLOCKS, BLOCKS);
 
 	// Launch kernel
-	tiledMatrixMul <<<grid, threads>>> (d_a, d_b, d_c, n, BLOCK_SIZE);
+  matrixMul<<<blocks, threads>>>(d_a, d_b, d_c, N);
 
 	// Copy result back from device
-	cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);	
+	cudaMemcpy(h_c.data(), d_c, bytes, cudaMemcpyDeviceToHost);	
 
 	// Verify the result
-	check_answer(h_a, h_b, h_c, n);
+	verify_result(h_a, h_b, h_c, N);
 
-	// Free host memory
-	free(h_a);
-	free(h_b);
-	free(h_c);
+  cout << "COMPLETED SUCCESFULLY!" << endl;
 
 	// Free device memory
 	cudaFree(d_a);
 	cudaFree(d_b);
 	cudaFree(d_c);
-
-	printf("COMPLETED SUCCESSFULLY\n");
 
 	return 0;
 }
