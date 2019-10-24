@@ -1,15 +1,20 @@
 // This program computes a sum reduction algortithm with warp divergence
 // By: Nick from CoffeeBeforeArch
 
-#include <cuda_runtime.h>
-#include <device_launch_parameters.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <assert.h>
+#include <cstdlib>
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cassert>
+#include <numeric>
 
-#define SIZE 256
-#define SHMEM_SIZE 256 * 4
+using std::accumulate;
+using std::generate;
+using std::cout;
+using std::endl;
+using std::vector;
+
+#define SHMEM_SIZE 256
 
 __global__ void sum_reduction(int *v, int *v_r) {
 	// Allocate shared memory
@@ -39,51 +44,43 @@ __global__ void sum_reduction(int *v, int *v_r) {
 	}
 }
 
-void initialize_vector(int *v, int n) {
-	for (int i = 0; i < n; i++) {
-		v[i] = 1;//rand() % 10;
-	}
-}
-
 int main() {
 	// Vector size
-	int n = 1 << 16;
-	size_t bytes = n * sizeof(int);
+	int N = 1 << 16;
+	size_t bytes = N * sizeof(int);
 
-	// Original vector and result vector
-	int *h_v, *h_v_r;
+	// Host data
+	vector<int> h_v(N);
+	vector<int> h_v_r(N);
+
+  // Initialize the input data
+  generate(begin(h_v), end(h_v), [](){ return rand() % 10; });
+
+	// Allocate device memory
 	int *d_v, *d_v_r;
-
-	// Allocate memory
-	h_v = (int*)malloc(bytes);
-	h_v_r = (int*)malloc(bytes);
 	cudaMalloc(&d_v, bytes);
 	cudaMalloc(&d_v_r, bytes);
 	
-	// Initialize vector
-	initialize_vector(h_v, n);
-
 	// Copy to device
-	cudaMemcpy(d_v, h_v, bytes, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_v, h_v.data(), bytes, cudaMemcpyHostToDevice);
 	
 	// TB Size
-	int TB_SIZE = SIZE;
+	const int TB_SIZE = 256;
 
 	// Grid Size (No padding)
-	int GRID_SIZE = n / TB_SIZE;
+	int GRID_SIZE = N / TB_SIZE;
 
 	// Call kernel
-	sum_reduction <<<GRID_SIZE, TB_SIZE>>> (d_v, d_v_r);
+	sum_reduction<<<GRID_SIZE, TB_SIZE>>>(d_v, d_v_r);
 
-	sum_reduction <<<1, TB_SIZE>>> (d_v_r, d_v_r);
+	sum_reduction<<<1, TB_SIZE>>> (d_v_r, d_v_r);
 
 	// Copy to host;
-	cudaMemcpy(h_v_r, d_v_r, bytes, cudaMemcpyDeviceToHost);
+	cudaMemcpy(h_v_r.data(), d_v_r, bytes, cudaMemcpyDeviceToHost);
 
 	// Print the result
 	printf("Accumulated result is %d \n", h_v_r[0]);
-	scanf("Press enter to continue: ");
-	assert(h_v_r[0] == 65536);
+	assert(h_v_r[0] == std::accumulate(begin(h_v), end(h_v), 0));
 
 	printf("COMPLETED SUCCESSFULLY\n");
 
