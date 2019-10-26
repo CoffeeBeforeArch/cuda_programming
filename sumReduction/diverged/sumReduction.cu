@@ -16,7 +16,7 @@ using std::vector;
 
 #define SHMEM_SIZE 256
 
-__global__ void sum_reduction(int *v, int *v_r) {
+__global__ void sumReduction(int *v, int *v_r) {
 	// Allocate shared memory
 	__shared__ int partial_sum[SHMEM_SIZE];
 
@@ -70,16 +70,15 @@ int main() {
 	// Grid Size (No padding)
 	int GRID_SIZE = N / TB_SIZE;
 
-	// Call kernel
-	sum_reduction<<<GRID_SIZE, TB_SIZE>>>(d_v, d_v_r);
+	// Call kernels
+	sumReduction<<<GRID_SIZE, TB_SIZE>>>(d_v, d_v_r);
 
-	sum_reduction<<<1, TB_SIZE>>> (d_v_r, d_v_r);
+	sumReduction<<<1, TB_SIZE>>> (d_v_r, d_v_r);
 
 	// Copy to host;
 	cudaMemcpy(h_v_r.data(), d_v_r, bytes, cudaMemcpyDeviceToHost);
 
 	// Print the result
-	printf("Accumulated result is %d \n", h_v_r[0]);
 	assert(h_v_r[0] == std::accumulate(begin(h_v), end(h_v), 0));
 
 	printf("COMPLETED SUCCESSFULLY\n");
