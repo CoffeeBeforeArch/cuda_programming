@@ -61,7 +61,7 @@ void init_array(char *a, int N){
 
 int main(){
     // Declare our problem size
-    int N = 1 << 20;
+    int N = 1 << 24;
 
     // Allocate memory on the host
     char *h_a = new char[N];
