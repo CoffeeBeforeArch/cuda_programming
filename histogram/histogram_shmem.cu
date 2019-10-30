@@ -61,13 +61,14 @@ __global__ void histogram(char *a, int *result, int N) {
 
 int main() {
   // Declare our problem size
-  int N = 1 << 24;
+  int N = 1 << 16;
 
   // Allocate memory on the host
   vector<char> h_input(N);
   vector<int> h_result(BINS);
 
   // Initialize the array
+  srand(1);
   generate(begin(h_input), end(h_input), []() { return 'a' + (rand() % 26); });
 
   // Allocate memory on the device
@@ -101,7 +102,7 @@ int main() {
   ofstream output_file;
   output_file.open("histogram.dat", ios::out | ios::trunc);
   for (auto i : h_result) {
-    output_file << h_result[i] << " \n\n";
+    output_file << i << " \n\n";
   }
   output_file.close();
 
