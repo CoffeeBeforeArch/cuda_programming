@@ -2,114 +2,112 @@
 // kernel in CUDA
 // By: Nick from CoffeeBeforeArch
 
-#include <iostream>
-#include <stdlib.h>
+#include <algorithm>
+#include <cassert>
+#include <cstdlib>
 #include <fstream>
+#include <iostream>
+#include <numeric>
+#include <vector>
+
+using std::accumulate;
+using std::cout;
+using std::endl;
+using std::generate;
+using std::ios;
+using std::ofstream;
+using std::vector;
 
 // Number of bins for our plot
-#define BINS 7
-#define DIV ((26 + BINS - 1) / BINS)
-
-using namespace std;
+constexpr int BINS = 7;
+constexpr int DIV = ((26 + BINS - 1) / BINS);
 
 // GPU kernel for computing a histogram
 // Takes:
 //  a: Problem array in global memory
 //  result: result array
 //  N: Size of the array
-__global__ void histogram(char *a, int *result, int N){
-    // Calculate global thread ID
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+__global__ void histogram(char *a, int *result, int N) {
+  // Calculate global thread ID
+  int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    // Allocate a local histogram for each TB
-    __shared__ int s_result[BINS];
+  // Allocate a local histogram for each TB
+  __shared__ int s_result[BINS];
 
-    // Initalize the shared memory to 0
-    if(threadIdx.x < BINS){
-        s_result[threadIdx.x] = 0;
-    }
+  // Initalize the shared memory to 0
+  if (threadIdx.x < BINS) {
+    s_result[threadIdx.x] = 0;
+  }
 
-    // Wait for shared memory writes to complete
-    __syncthreads();
+  // Wait for shared memory writes to complete
+  __syncthreads();
 
-    // Calculate the bin positions locally
-    int alpha_position;
-    for(int i = tid; i < N; i += (gridDim.x * blockDim.x)){
-        // Calculate the position in the alphabet
-        alpha_position = a[i] - 'a';
-        atomicAdd(&s_result[(alpha_position / DIV)], 1);
-    }
+  // Calculate the bin positions locally
+  int alpha_position;
+  for (int i = tid; i < N; i += (gridDim.x * blockDim.x)) {
+    // Calculate the position in the alphabet
+    alpha_position = a[i] - 'a';
+    atomicAdd(&s_result[(alpha_position / DIV)], 1);
+  }
 
-    // Wait for shared memory writes to complete
-    __syncthreads();
+  // Wait for shared memory writes to complete
+  __syncthreads();
 
-    // Combine the partial results
-    if(threadIdx.x < BINS){
-        atomicAdd(&result[threadIdx.x], s_result[threadIdx.x]);
-    }
+  // Combine the partial results
+  if (threadIdx.x < BINS) {
+    atomicAdd(&result[threadIdx.x], s_result[threadIdx.x]);
+  }
 }
 
-// Initializes our input array
-// Takes:
-//  a: array of integers
-//  N: Length of the array
-void init_array(char *a, int N){
-    for(int i = 0; i < N; i++){
-        a[i] = 'a' +  (rand() % 26);
-    }
-}
+int main() {
+  // Declare our problem size
+  int N = 1 << 24;
 
-int main(){
-    // Declare our problem size
-    int N = 1 << 24;
+  // Allocate memory on the host
+  vector<char> h_input(N);
+  vector<int> h_result(BINS);
 
-    // Allocate memory on the host
-    char *h_a = new char[N];
-    size_t bytes_a = N * sizeof(char);
+  // Initialize the array
+  generate(begin(h_input), end(h_input), []() { return 'a' + (rand() % 26); });
 
-    // Allocate space for the binned result
-    int *h_result = new int[BINS];
-    size_t bytes_r = BINS * sizeof(int);
+  // Allocate memory on the device
+  char *d_input;
+  int *d_result;
+  cudaMalloc(&d_input, N);
+  cudaMalloc(&d_result, BINS * sizeof(int));
 
-    // Initialize the array
-    init_array(h_a, N);
-    
-    // Allocate memory on the device
-    char *d_a;
-    int *d_result;
-    cudaMalloc(&d_a, bytes_a);
-    cudaMalloc(&d_result, bytes_r);
+  // Copy the array to the device
+  cudaMemcpy(d_input, h_input.data(), N, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_result, h_result.data(), BINS * sizeof(int),
+             cudaMemcpyHostToDevice);
 
-    // Copy the array to the device
-    cudaMemcpy(d_a, h_a, bytes_a, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_result, h_result, bytes_r, cudaMemcpyHostToDevice);
+  // Number of threads per threadblock
+  int THREADS = 512;
 
-    // Number of threads per threadblock
-    int THREADS = 512;
+  // Calculate the number of threadblocks
+  int BLOCKS = N / THREADS;
 
-    // Calculate the number of threadblocks
-    int BLOCKS = N / THREADS;
+  // Launch the kernel
+  histogram<<<BLOCKS, THREADS>>>(d_input, d_result, N);
 
-    // Launch the kernel
-    histogram<<<BLOCKS, THREADS>>>(d_a, d_result, N);
+  // Copy the result back
+  cudaMemcpy(h_result.data(), d_result, BINS * sizeof(int),
+             cudaMemcpyDeviceToHost);
 
-    // Copy the result back
-    cudaMemcpy(h_result, d_result, bytes_r, cudaMemcpyDeviceToHost);
+  // Functional test (the sum of all bins == N)
+  assert(N == accumulate(begin(h_result), end(h_result), 0));
 
-    // Write the data out for gnuplot
-    ofstream output_file;
-    output_file.open("histogram.dat", ios::out | ios::trunc);
+  // Dump the counts of the bins to a file
+  ofstream output_file;
+  output_file.open("histogram.dat", ios::out | ios::trunc);
+  for (auto i : h_result) {
+    output_file << h_result[i] << " \n\n";
+  }
+  output_file.close();
 
-    for(int i = 0; i < BINS; i++){
-        output_file << h_result[i] << " \n\n";
-    }
-    output_file.close();
+  // Free memory
+  cudaFree(d_input);
+  cudaFree(d_result);
 
-    // Free memory
-    delete [] h_a;
-    delete [] h_result;
-    cudaFree(d_a);
-    cudaFree(d_result);
-
-    return 0;
+  return 0;
 }
