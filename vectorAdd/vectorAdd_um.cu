@@ -3,7 +3,10 @@
 
 #include <stdio.h>
 #include <cassert>
-#include <cstdlib>
+#include <iostream>
+
+using std::cout;
+using std::endl;
 
 // CUDA kernel for vector addition
 // No change when using CUDA unified memory
@@ -14,20 +17,6 @@ __global__ void vectorAdd(int *a, int *b, int *c, int N) {
   // Boundary check
   if (tid < N) {
     c[tid] = a[tid] + b[tid];
-  }
-}
-
-// Initialize an array with random numbers
-void init_array(int *a, int N) {
-  for (int i = 0; i < N; i++) {
-    a[i] = rand() % 100;
-  }
-}
-
-// Verify the result on the CPU
-void verify_result(int *a, int *b, int *c, int N) {
-  for (int i = 0; i < N; i++) {
-    assert(c[i] == a[i] + b[i]);
   }
 }
 
@@ -45,8 +34,10 @@ int main() {
   cudaMallocManaged(&c, bytes);
 
   // Initialize vectors
-  init_array(a, N);
-  init_array(b, N);
+  for (int i = 0; i < N; i++) {
+    a[i] = rand() % 100;
+    b[i] = rand() % 100;
+  }
 
   // Threads per CTA (1024 threads per CTA)
   int BLOCK_SIZE = 1 << 10;
@@ -55,14 +46,14 @@ int main() {
   int GRID_SIZE = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
   // Get the device ID for prefetching calls
-  int id = cudaGetDevice(&id);
+  // int id = cudaGetDevice(&id);
 
   // Pre-fetch 'a' and 'b' arrays to the specified device (GPU)
-  cudaMemPrefetchAsync(a, bytes, id);
-  cudaMemPrefetchAsync(b, bytes, id);
+  // cudaMemPrefetchAsync(a, bytes, id);
+  // cudaMemPrefetchAsync(b, bytes, id);
 
   // Call CUDA kernel
-  vectorAddUM<<<GRID_SIZE, BLOCK_SIZE>>>(a, b, c, N);
+  vectorAdd<<<GRID_SIZE, BLOCK_SIZE>>>(a, b, c, N);
 
   // Wait for all previous operations before using values
   // We need this because we don't get the implicit synchronization of
@@ -70,17 +61,19 @@ int main() {
   cudaDeviceSynchronize();
 
   // Pre-fetch 'c' to the host (CPU)
-  cudaMemPrefetchAsync(c, bytes, cudaCpuDeviceId);
+  // cudaMemPrefetchAsync(c, bytes, cudaCpuDeviceId);
 
   // Verify the result on the CPU
-  verify_result(a, b, c, N);
+  for (int i = 0; i < N; i++) {
+    assert(c[i] == a[i] + b[i]);
+  }
 
   // Free unified memory (same as memory allocated with cudaMalloc)
   cudaFree(a);
   cudaFree(b);
   cudaFree(c);
 
-  printf("COMPLETED SUCCESSFULLY\n");
+  cout << "COMPLETED SUCCESSFULLY" << endl;
 
   return 0;
 }

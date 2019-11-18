@@ -2,19 +2,19 @@
 // By: Nick from CoffeeBeforeArch
 
 #include <algorithm>
-#include <vector>
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
 #include <iterator>
+#include <vector>
 
-using std::vector;
 using std::begin;
 using std::copy;
 using std::cout;
 using std::end;
 using std::endl;
 using std::generate;
+using std::vector;
 
 // CUDA kernel for vector addition
 // __global__ means this is called from the CPU, and runs on the GPU
@@ -42,9 +42,9 @@ int main() {
   size_t bytes = sizeof(int) * N;
 
   // Vectors for holding the host-side (CPU-side) data
-  vector<int> a;
-  vector<int> b;
-  vector<int> c;
+  vector<int> a(N);
+  vector<int> b(N);
+  vector<int> c(N);
 
   // Initialize random numbers in each array
   generate(begin(a), end(a), []() { return rand() % 100; });
@@ -89,7 +89,7 @@ int main() {
   cudaFree(d_b);
   cudaFree(d_c);
 
-  printf("COMPLETED SUCCESFULLY\n");
+  cout << "COMPLETED SUCCESSFULLY" << endl;
 
   return 0;
 }
