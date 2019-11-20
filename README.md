@@ -24,3 +24,20 @@ CUDA version: 10.0, 9.1
 # Vector Addition
 | Video | Concepts | Files |
 | ----- | -------- | ----- |
+
+
+# Matrix Multiplication (GEMM)
+| Video | Concepts | Files |
+| ----- | -------- | ----- |
+
+# Sum Reduction
+| Video | Concepts | Files |
+| ----- | -------- | ----- |
+
+# Convolution
+| Video | Concepts | Files |
+| ----- | -------- | ----- |
+
+# Histogram
+| Video | Concepts | Files |
+| ----- | -------- | ----- |
