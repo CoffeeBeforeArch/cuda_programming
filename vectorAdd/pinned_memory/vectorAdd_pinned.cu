@@ -1,4 +1,4 @@
-// This program computes the sum of two vectors of length N
+// This program computes the sum of two vectors of length N using pinned memory
 // By: Nick from CoffeeBeforeArch
 
 #include <algorithm>
@@ -30,7 +30,7 @@ __global__ void vectorAdd(int* a, int* b, int* c, int N) {
 }
 
 // Check vector add result
-void verify_result(vector<int> a, vector<int> b, vector<int> c) {
+void verify_result(vector<int> &a, vector<int> &b, vector<int> &c) {
   for (int i = 0; i < a.size(); i++) {
     assert(c[i] == a[i] + b[i]);
   }
