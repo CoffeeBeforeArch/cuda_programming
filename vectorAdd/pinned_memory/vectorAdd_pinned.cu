@@ -30,26 +30,31 @@ __global__ void vectorAdd(int* a, int* b, int* c, int N) {
 }
 
 // Check vector add result
-void verify_result(vector<int> &a, vector<int> &b, vector<int> &c) {
-  for (int i = 0; i < a.size(); i++) {
+void verify_result(int *a, int *b, int *c, int N) {
+  for (int i = 0; i < N; i++) {
     assert(c[i] == a[i] + b[i]);
   }
 }
 
 int main() {
   // Array size of 2^16 (65536 elements)
-  constexpr int N = 1 << 16;
+  constexpr int N = 1 << 26;
   size_t bytes = sizeof(int) * N;
 
   // Vectors for holding the host-side (CPU-side) data
-  vector<int> a(N);
-  vector<int> b(N);
-  vector<int> c(N);
+  int *h_a, *h_b, *h_c;
+
+  // Allocate pinned memory
+  cudaMallocHost(&h_a, bytes);
+  cudaMallocHost(&h_b, bytes);
+  cudaMallocHost(&h_c, bytes);
 
   // Initialize random numbers in each array
-  generate(begin(a), end(a), []() { return rand() % 100; });
-  generate(begin(b), end(b), []() { return rand() % 100; });
-
+  for(int i = 0; i < N; i++){
+    h_a[i] = rand() % 100;
+    h_b[i] = rand() % 100;
+  }
+  
   // Allocate memory on the device
   int *d_a, *d_b, *d_c;
   cudaMalloc(&d_a, bytes);
@@ -57,8 +62,8 @@ int main() {
   cudaMalloc(&d_c, bytes);
 
   // Copy data from the host to the device (CPU -> GPU)
-  cudaMemcpy(d_a, a.data(), bytes, cudaMemcpyHostToDevice);
-  cudaMemcpy(d_b, b.data(), bytes, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_b, h_b, bytes, cudaMemcpyHostToDevice);
 
   // Threads per CTA (1024 threads per CTA)
   int NUM_THREADS = 1 << 10;
@@ -79,10 +84,15 @@ int main() {
   // launch to complete (both go to the default stream in this case).
   // Therefore, this cudaMemcpy acts as both a memcpy and synchronization
   // barrier.
-  cudaMemcpy(c.data(), d_c, bytes, cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);
 
   // Check result for errors
-  verify_result(a, b, c);
+  verify_result(h_a, h_b, h_c, N);
+
+  // Free pinned memory
+  cudaFreeHost(h_a);
+  cudaFreeHost(h_b);
+  cudaFreeHost(h_c);
 
   // Free memory on device
   cudaFree(d_a);

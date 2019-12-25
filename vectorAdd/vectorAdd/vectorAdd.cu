@@ -38,7 +38,7 @@ void verify_result(vector<int> &a, vector<int> &b, vector<int> &c) {
 
 int main() {
   // Array size of 2^16 (65536 elements)
-  constexpr int N = 1 << 16;
+  constexpr int N = 1 << 26;
   size_t bytes = sizeof(int) * N;
 
   // Vectors for holding the host-side (CPU-side) data
