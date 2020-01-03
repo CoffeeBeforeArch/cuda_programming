@@ -6,7 +6,6 @@
 #include <iostream>
 
 using std::cout;
-using std::endl;
 
 // CUDA kernel for vector addition
 // No change when using CUDA unified memory
@@ -32,25 +31,32 @@ int main() {
   cudaMallocManaged(&a, bytes);
   cudaMallocManaged(&b, bytes);
   cudaMallocManaged(&c, bytes);
+  
+  // Get the device ID for prefetching calls
+  int id = cudaGetDevice(&id);
+
+  // Set some hints about the data and do some prefetching
+  cudaMemAdvise(a, bytes, cudaMemAdviseSetPreferredLocation, cudaCpuDeviceId);
+  cudaMemAdvise(b, bytes, cudaMemAdviseSetPreferredLocation, cudaCpuDeviceId);
+  cudaMemPrefetchAsync(c, bytes, id);
 
   // Initialize vectors
   for (int i = 0; i < N; i++) {
     a[i] = rand() % 100;
     b[i] = rand() % 100;
   }
-
+  
+  // Pre-fetch 'a' and 'b' arrays to the specified device (GPU)
+  cudaMemAdvise(a, bytes, cudaMemAdviseSetReadMostly, id);
+  cudaMemAdvise(b, bytes, cudaMemAdviseSetReadMostly, id);
+  cudaMemPrefetchAsync(a, bytes, id);
+  cudaMemPrefetchAsync(b, bytes, id);
+  
   // Threads per CTA (1024 threads per CTA)
   int BLOCK_SIZE = 1 << 10;
 
   // CTAs per Grid
   int GRID_SIZE = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
-
-  // Get the device ID for prefetching calls
-  // int id = cudaGetDevice(&id);
-
-  // Pre-fetch 'a' and 'b' arrays to the specified device (GPU)
-  // cudaMemPrefetchAsync(a, bytes, id);
-  // cudaMemPrefetchAsync(b, bytes, id);
 
   // Call CUDA kernel
   vectorAdd<<<GRID_SIZE, BLOCK_SIZE>>>(a, b, c, N);
@@ -60,8 +66,10 @@ int main() {
   // cudaMemcpy like in the original example
   cudaDeviceSynchronize();
 
-  // Pre-fetch 'c' to the host (CPU)
-  // cudaMemPrefetchAsync(c, bytes, cudaCpuDeviceId);
+  // Prefetch to the host (CPU)
+  cudaMemPrefetchAsync(a, bytes, cudaCpuDeviceId);
+  cudaMemPrefetchAsync(b, bytes, cudaCpuDeviceId);
+  cudaMemPrefetchAsync(c, bytes, cudaCpuDeviceId);
 
   // Verify the result on the CPU
   for (int i = 0; i < N; i++) {
@@ -73,7 +81,7 @@ int main() {
   cudaFree(b);
   cudaFree(c);
 
-  cout << "COMPLETED SUCCESSFULLY" << endl;
+  cout << "COMPLETED SUCCESSFULLY!\n";
 
   return 0;
 }
