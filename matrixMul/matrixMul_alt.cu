@@ -12,18 +12,20 @@ using std::cout;
 using std::generate;
 using std::vector;
 
-__global__ void matrixMul(const int *__restrict a, const int *__restrict b,
-                          int *__restrict c, int N) {
+__global__ void matrixMul(const int *a, const int *b, int *c, int N) {
   // Compute each thread's global row and column index
   int row = blockIdx.y * blockDim.y + threadIdx.y;
   int col = blockIdx.x * blockDim.x + threadIdx.x;
 
   // Iterate over row, and down column
-  c[row * N + col] = 0;
+  int tmp = 0;
   for (int k = 0; k < N; k++) {
     // Accumulate results for a single element
-    c[row * N + col] += a[row * N + k] * b[k * N + col];
+    tmp += a[row * N + k] * b[k * N + col];
   }
+
+  // Write back the result
+  c[row * N + col] = tmp;
 }
 
 // Check result on the CPU
