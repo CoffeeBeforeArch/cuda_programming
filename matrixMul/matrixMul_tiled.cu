@@ -27,26 +27,29 @@ __global__ void matrixMul(const int *a, const int *b, int *c) {
   int tmp = 0;
 
   // Sweep tile across matrix
-  for(int i = 0; i < N; i += blockDim.x) {
+  for (int i = 0; i < N; i += blockDim.x) {
     // Load in elements for this tile
     s_a[threadIdx.y * blockDim.x + threadIdx.x] = a[row * N + i + threadIdx.x];
-    s_b[threadIdx.y * blockDim.x + threadIdx.x] = b[i * N + threadIdx.y * N + col];
-    
+    s_b[threadIdx.y * blockDim.x + threadIdx.x] =
+        b[i * N + threadIdx.y * N + col];
+
     // Wait for both tiles to be loaded in before doing computation
     __syncthreads();
 
     // Do matrix multiplication on the small matrix
     for (int j = 0; j < blockDim.x; j++) {
-      tmp += s_a[threadIdx.y * blockDim.x + j] * s_b[j * blockDim.x + threadIdx.x];
+      tmp +=
+          s_a[threadIdx.y * blockDim.x + j] * s_b[j * blockDim.x + threadIdx.x];
     }
-    
-    // Wait for all threads to finish using current tiles before loading in new ones
+
+    // Wait for all threads to finish using current tiles before loading in new
+    // ones
     __syncthreads();
   }
 
   // Write back results
   c[row * N + col] = tmp;
- }
+}
 
 // Check result on the CPU
 void verify_result(vector<int> &a, vector<int> &b, vector<int> &c) {
@@ -60,7 +63,7 @@ void verify_result(vector<int> &a, vector<int> &b, vector<int> &c) {
         // Accumulate the partial results
         tmp += a[i * N + k] * b[k * N + j];
       }
-      
+
       // Check against the CPU result
       assert(tmp == c[i * N + j]);
     }
