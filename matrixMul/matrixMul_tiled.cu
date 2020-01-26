@@ -12,7 +12,9 @@ using std::cout;
 using std::generate;
 using std::vector;
 
-const int N = 1024;
+// Pull out matrix and shared memory tile size 
+const int N = 1 << 10;
+const int SHMEM_SIZE = 1 << 10;
 
 __global__ void matrixMul(const int *a, const int *b, int *c) {
   // Compute each thread's global row and column index
@@ -20,8 +22,8 @@ __global__ void matrixMul(const int *a, const int *b, int *c) {
   int col = blockIdx.x * blockDim.x + threadIdx.x;
 
   // Statically allocated shared memory
-  __shared__ int s_a[N];
-  __shared__ int s_b[N];
+  __shared__ int s_a[SHMEM_SIZE];
+  __shared__ int s_b[SHMEM_SIZE];
 
   // Accumulate in temporary variable
   int tmp = 0;
