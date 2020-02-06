@@ -1,80 +1,90 @@
 // This program calculates matrix multiplication (SGEMM) using cuBLAS
 // By: Nick from CoffeeBeforeArch
 
-#include <cuda_runtime.h>
-#include <device_launch_parameters.h>
 #include <cublas_v2.h>
 #include <curand.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <time.h>
-#include <stdio.h>
-#include <math.h>
+#include <cassert>
+#include <cmath>
+#include <ctime>
+#include <iostream>
+#include <vector>
 
+// Verify our result on the CPU
 void verify_solution(float *a, float *b, float *c, int n) {
-	float temp;
-	float epsilon = 0.001;
-	for (int i = 0; i < n; i++) {
-		for (int j = 0; j < n; j++) {
-			temp = 0;
-			for (int k = 0; k < n; k++) {
-				temp += a[k * n + i] * b[j * n + k];
-			}
-			assert(fabs(c[j * n + i] - temp) < epsilon);
-		}
-	}
+  float epsilon = 0.001;
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      float temp = 0;
+      for (int k = 0; k < n; k++) {
+        temp += a[k * n + i] * b[j * n + k];
+      }
+      assert(fabs(c[j * n + i] - temp) < epsilon);
+    }
+  }
 }
 
 int main() {
-	// Problem size
-	int n = 1 << 10;
-	size_t bytes = n * n * sizeof(float);
+  // Dimensions for our matrices
+  // MxN * NxK = MxK
+  int M = 1 << 8;
+  int N = 1 << 9;
+  int K = 1 << 10;
 
-	// Declare pointers to matrices on device and host
-	float *h_a, *h_b, *h_c;
-	float *d_a, *d_b, *d_c;
+  // Pre-calculate the size (in bytes) of our matrices
+  size_t bytes_a = M * N * sizeof(float);
+  size_t bytes_b = N * K * sizeof(float);
+  size_t bytes_c = M * K * sizeof(float);
 
-	// Allocate memory
-	h_a = (float*)malloc(bytes);
-	h_b = (float*)malloc(bytes);
-	h_c = (float*)malloc(bytes);
-	cudaMalloc(&d_a, bytes);
-	cudaMalloc(&d_b, bytes);
-	cudaMalloc(&d_c, bytes);
+  // Vectors for the host data
+  std::vector<float> h_a(M * N);
+  std::vector<float> h_b(N * K);
+  std::vector<float> h_c(M * K);
 
-	// Pseudo random number generator
-	curandGenerator_t prng;
-	curandCreateGenerator(&prng, CURAND_RNG_PSEUDO_DEFAULT);
+  // Allocate device memory
+  float *d_a, *d_b, *d_c;
+  cudaMalloc(&d_a, bytes);
+  cudaMalloc(&d_b, bytes);
+  cudaMalloc(&d_c, bytes);
 
-	// Set the seed
-	curandSetPseudoRandomGeneratorSeed(prng, (unsigned long long)clock());
+  // Pseudo random number generator
+  curandGenerator_t prng;
+  curandCreateGenerator(&prng, CURAND_RNG_PSEUDO_DEFAULT);
 
-	// Fill the matrix with random numbers on the device
-	curandGenerateUniform(prng, d_a, n*n);
-	curandGenerateUniform(prng, d_b, n*n);
+  // Set the seed
+  curandSetPseudoRandomGeneratorSeed(prng, (unsigned long long)clock());
 
-	// cuBLAS handle
-	cublasHandle_t handle;
-	cublasCreate(&handle);
+  // Fill the matrix with random numbers on the device
+  curandGenerateUniform(prng, d_a, M * N);
+  curandGenerateUniform(prng, d_b, N * K);
 
-	// Scalaing factors
-	float alpha = 1.0f;
-	float beta = 0.0f;
+  // cuBLAS handle
+  cublasHandle_t handle;
+  cublasCreate(&handle);
 
-	// Calculate: c = (alpha*a) * b + (beta*c)
-	// (m X n) * (n X k) = (m X k)
-	// Signature: handle, operation, operation, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc
-	cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, n, n, n, &alpha, d_a, n, d_b, n, &beta, d_c, n);
+  // Scalaing factors
+  float alpha = 1.0f;
+  float beta = 0.0f;
 
-	// Copy back the three matrices
-	cudaMemcpy(h_a, d_a, bytes, cudaMemcpyDeviceToHost);
-	cudaMemcpy(h_b, d_b, bytes, cudaMemcpyDeviceToHost);
-	cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);
+  // Calculate: c = (alpha*a) * b + (beta*c)
+  // MxK = MxN * NxK
+  // Signature: handle, operation, operation, m, n, k, alpha, A, lda, B, ldb,
+  // beta, C, ldc
+  cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alpha, d_a, M, d_b, N,
+              &beta, d_c, M);
 
-	// Verify solution
-	verify_solution(h_a, h_b, h_c, n);
+  // Copy back the three matrices
+  cudaMemcpy(h_a, d_a, bytes, cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_b, d_b, bytes, cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);
 
-	printf("COMPLETED SUCCESSFULLY\n");
+  // Verify solution
+  verify_solution(h_a, h_b, h_c, n);
+  std::cout << "COMPLETED SUCCESSFULLY\n";
 
-	return 0;
+  // Free our memory
+  cudaFree(d_a);
+  cudaFree(d_b);
+  cudaFree(d_c);
+
+  return 0;
 }
