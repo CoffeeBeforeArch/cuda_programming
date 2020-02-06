@@ -69,20 +69,8 @@ int main() {
   // MxK = MxN * NxK
   // Signature: handle, operation, operation, m, n, k, alpha, A, lda, B, ldb,
   // beta, C, ldc
-  cublasSgemm(handle,
-      CUBLAS_OP_N,
-      CUBLAS_OP_N,
-      M,
-      N,
-      K,
-      &alpha,
-      d_a,
-      M,
-      d_b,
-      N,
-      &beta,
-      d_c,
-      M);
+  cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alpha, d_a, M, d_b, N,
+              &beta, d_c, M);
 
   // Copy back the three matrices
   cudaMemcpy(h_a.data(), d_a, bytes_a, cudaMemcpyDeviceToHost);
