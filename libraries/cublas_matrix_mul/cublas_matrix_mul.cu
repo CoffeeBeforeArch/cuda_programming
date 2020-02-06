@@ -23,17 +23,17 @@ void verify_solution(float *a, float *b, float *c, int M, int N, int K) {
       for (int i = 0; i < K; i++) {
         temp += a[row + M * i] * b[col * K + i];
       }
-      assert(fabs(c[col * N + row] - temp) <= epsilon);
+      assert(fabs(c[col * M + row] - temp) <= epsilon);
     }
   }
 }
 
 int main() {
   // Dimensions for our matrices
-  // MxN * NxK = MxK
-  const int M = 1 << 3;
-  const int N = 1 << 2;
-  const int K = 1 << 3;
+  // MxK * KxN = MxN
+  const int M = 1 << 9;
+  const int N = 1 << 8;
+  const int K = 1 << 7;
 
   // Pre-calculate the size (in bytes) of our matrices
   const size_t bytes_a = M * K * sizeof(float);
@@ -44,12 +44,12 @@ int main() {
   std::vector<float> h_a(M * K);
   std::vector<float> h_b(K * N);
   std::vector<float> h_c(M * N);
-
   // Allocate device memory
   float *d_a, *d_b, *d_c;
   cudaMalloc(&d_a, bytes_a);
   cudaMalloc(&d_b, bytes_b);
   cudaMalloc(&d_c, bytes_c);
+  cudaMemcpy(d_c, h_c.data(), bytes_c, cudaMemcpyHostToDevice);
 
   // Pseudo random number generator
   curandGenerator_t prng;
@@ -71,8 +71,8 @@ int main() {
   float beta = 0.0f;
 
   // Calculate: c = (alpha*a) * b + (beta*c)
-  // MxK = MxN * NxK
-  // Signature: handle, operation, operation, m, n, k, alpha, A, lda, B, ldb,
+  // MxN = MxK * KxN
+  // Signature: handle, operation, operation, M, N, K, alpha, A, lda, B, ldb,
   // beta, C, ldc
   cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alpha, d_a, M, d_b, K,
               &beta, d_c, M);
