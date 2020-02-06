@@ -10,15 +10,15 @@
 #include <vector>
 
 // Verify our result on the CPU
-void verify_solution(float *a, float *b, float *c, int n) {
+void verify_solution(float *a, float *b, float *c, int M, int N, int K) {
   float epsilon = 0.001;
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
+  for (int i = 0; i < M; i++) {
+    for (int j = 0; j < K; j++) {
       float temp = 0;
-      for (int k = 0; k < n; k++) {
-        temp += a[k * n + i] * b[j * n + k];
+      for (int k = 0; k < N; k++) {
+        temp += a[k * N + i] * b[j * K + k];
       }
-      assert(fabs(c[j * n + i] - temp) < epsilon);
+      assert(fabs(c[j * N + i] - temp) < epsilon);
     }
   }
 }
@@ -26,14 +26,14 @@ void verify_solution(float *a, float *b, float *c, int n) {
 int main() {
   // Dimensions for our matrices
   // MxN * NxK = MxK
-  int M = 1 << 8;
-  int N = 1 << 9;
-  int K = 1 << 10;
+  const int M = 1 << 8;
+  const int N = 1 << 9;
+  const int K = 1 << 7;
 
   // Pre-calculate the size (in bytes) of our matrices
-  size_t bytes_a = M * N * sizeof(float);
-  size_t bytes_b = N * K * sizeof(float);
-  size_t bytes_c = M * K * sizeof(float);
+  const size_t bytes_a = M * N * sizeof(float);
+  const size_t bytes_b = N * K * sizeof(float);
+  const size_t bytes_c = M * K * sizeof(float);
 
   // Vectors for the host data
   std::vector<float> h_a(M * N);
@@ -42,9 +42,9 @@ int main() {
 
   // Allocate device memory
   float *d_a, *d_b, *d_c;
-  cudaMalloc(&d_a, bytes);
-  cudaMalloc(&d_b, bytes);
-  cudaMalloc(&d_c, bytes);
+  cudaMalloc(&d_a, bytes_a);
+  cudaMalloc(&d_b, bytes_b);
+  cudaMalloc(&d_c, bytes_c);
 
   // Pseudo random number generator
   curandGenerator_t prng;
@@ -69,16 +69,28 @@ int main() {
   // MxK = MxN * NxK
   // Signature: handle, operation, operation, m, n, k, alpha, A, lda, B, ldb,
   // beta, C, ldc
-  cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &alpha, d_a, M, d_b, N,
-              &beta, d_c, M);
+  cublasSgemm(handle,
+      CUBLAS_OP_N,
+      CUBLAS_OP_N,
+      M,
+      N,
+      K,
+      &alpha,
+      d_a,
+      M,
+      d_b,
+      N,
+      &beta,
+      d_c,
+      M);
 
   // Copy back the three matrices
-  cudaMemcpy(h_a, d_a, bytes, cudaMemcpyDeviceToHost);
-  cudaMemcpy(h_b, d_b, bytes, cudaMemcpyDeviceToHost);
-  cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_a.data(), d_a, bytes_a, cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_b.data(), d_b, bytes_b, cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_c.data(), d_c, bytes_c, cudaMemcpyDeviceToHost);
 
   // Verify solution
-  verify_solution(h_a, h_b, h_c, n);
+  verify_solution(h_a.data(), h_b.data(), h_c.data(), M, N, K);
   std::cout << "COMPLETED SUCCESSFULLY\n";
 
   // Free our memory
