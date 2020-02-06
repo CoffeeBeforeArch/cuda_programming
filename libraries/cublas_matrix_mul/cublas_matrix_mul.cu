@@ -10,6 +10,7 @@
 #include <vector>
 
 // Verify our result on the CPU
+// Indexing must account for the CUBLAS operating on column-major data
 void verify_solution(float *a, float *b, float *c, int M, int N, int K) {
   // Tolerance for our result (floats are imperfect)
   float epsilon = 0.001f;
@@ -23,6 +24,8 @@ void verify_solution(float *a, float *b, float *c, int M, int N, int K) {
       for (int i = 0; i < K; i++) {
         temp += a[row + M * i] * b[col * K + i];
       }
+
+      // Check to see if the difference falls within our tolerance
       assert(fabs(c[col * M + row] - temp) <= epsilon);
     }
   }
@@ -44,12 +47,12 @@ int main() {
   std::vector<float> h_a(M * K);
   std::vector<float> h_b(K * N);
   std::vector<float> h_c(M * N);
+  
   // Allocate device memory
   float *d_a, *d_b, *d_c;
   cudaMalloc(&d_a, bytes_a);
   cudaMalloc(&d_b, bytes_b);
   cudaMalloc(&d_c, bytes_c);
-  cudaMemcpy(d_c, h_c.data(), bytes_c, cudaMemcpyHostToDevice);
 
   // Pseudo random number generator
   curandGenerator_t prng;
