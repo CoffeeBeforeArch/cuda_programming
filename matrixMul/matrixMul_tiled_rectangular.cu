@@ -12,7 +12,7 @@ using std::cout;
 using std::generate;
 using std::vector;
 
-// Pull out matrix and shared memory tile size 
+// Pull out matrix and shared memory tile size
 const int M = 1 << 10;
 const int N = 1 << 11;
 const int K = 1 << 12;
