@@ -121,7 +121,7 @@ int main() {
   // Check result
   verify_result(h_a, h_b, h_c);
 
-  printf("COMPLETED SUCCESSFULLY\n");
+  cout << "COMPLETED SUCCESSFULLY\n";
 
   // Free memory on device
   cudaFree(d_a);
