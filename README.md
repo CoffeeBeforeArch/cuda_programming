@@ -6,9 +6,7 @@ This repository contains all code from the YouTube series "CUDA Crash Course (v2
 Suggestions for specific content can be sent to: CoffeeBeforeArch@gmail.com
 
 ## Environment 
-Operating System: Windows 10 & Ubuntu 18.04
-
-IDE: Visual Studio 2019
+Operating System: Ubuntu 18.04
 
 Text Editor: VIM
 
