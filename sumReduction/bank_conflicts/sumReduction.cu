@@ -11,7 +11,6 @@
 
 using std::accumulate;
 using std::cout;
-using std::endl;
 using std::generate;
 using std::vector;
 
@@ -84,7 +83,7 @@ int main() {
   // Print the result
   assert(h_v_r[0] == std::accumulate(begin(h_v), end(h_v), 0));
 
-  printf("COMPLETED SUCCESSFULLY\n");
+  cout << "COMPLETED SUCCESSFULLY\n";
 
   return 0;
 }

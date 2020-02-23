@@ -12,7 +12,6 @@ using std::begin;
 using std::copy;
 using std::cout;
 using std::end;
-using std::endl;
 using std::generate;
 using std::vector;
 
@@ -99,7 +98,7 @@ int main() {
   cudaFree(d_b);
   cudaFree(d_c);
 
-  cout << "COMPLETED SUCCESSFULLY" << endl;
+  cout << "COMPLETED SUCCESSFULLY\n";
 
   return 0;
 }

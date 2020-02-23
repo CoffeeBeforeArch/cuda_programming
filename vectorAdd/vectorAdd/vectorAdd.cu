@@ -12,7 +12,6 @@ using std::begin;
 using std::copy;
 using std::cout;
 using std::end;
-using std::endl;
 using std::generate;
 using std::vector;
 

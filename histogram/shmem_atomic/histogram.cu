@@ -12,7 +12,6 @@
 
 using std::accumulate;
 using std::cout;
-using std::endl;
 using std::generate;
 using std::ios;
 using std::ofstream;

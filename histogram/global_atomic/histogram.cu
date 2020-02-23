@@ -6,12 +6,11 @@
 #include <cassert>
 #include <fstream>
 #include <iostream>
-#include <vector>
 #include <numeric>
+#include <vector>
 
 using std::accumulate;
 using std::cout;
-using std::endl;
 using std::generate;
 using std::ios;
 using std::ofstream;
@@ -76,10 +75,10 @@ int main() {
   // Copy the result back
   cudaMemcpy(h_result.data(), d_result, BINS * sizeof(int),
              cudaMemcpyDeviceToHost);
-  
+
   // Functional test
   assert(N == accumulate(begin(h_result), end(h_result), 0));
-  
+
   // Write the data out for gnuplot
   ofstream output_file;
   output_file.open("histogram.dat", ios::out | ios::trunc);
