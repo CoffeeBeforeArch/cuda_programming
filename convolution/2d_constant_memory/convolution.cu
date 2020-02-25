@@ -1,11 +1,9 @@
 // This program implements 2D convolution using Constant memory in CUDA
 // By: Nick from CoffeeBeforeArch
 
-#include <assert.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstdlib>
 #include <iostream>
-
-using namespace std;
 
 // 7 x 7 convolutional mask
 #define MASK_DIM 7
@@ -157,7 +155,7 @@ int main() {
   // Functional test
   verify_result(matrix, h_mask, result, N);
 
-  cout << "COMPLETED SUCCESSFULLY!";
+  std::cout << "COMPLETED SUCCESSFULLY!";
 
   // Free the memory we allocated
   delete[] matrix;

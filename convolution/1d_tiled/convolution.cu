@@ -3,11 +3,9 @@
 // reused values into shared memory (scratchpad)
 // By: Nick from CoffeeBeforeArch
 
-#include <assert.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstdlib>
 #include <iostream>
-
-using namespace std;
 
 // Length of our convolution mask
 #define MASK_LENGTH 7
@@ -147,7 +145,7 @@ int main() {
   // Verify the result
   verify_result(h_array, h_mask, h_result, n);
 
-  cout << "COMPLETED SUCCESSFULLY\n";
+  std::cout << "COMPLETED SUCCESSFULLY\n";
 
   // Free allocated memory on the device and host
   delete[] h_array;

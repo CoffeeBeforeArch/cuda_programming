@@ -1,11 +1,9 @@
 // This program implements a 1D convolution using CUDA
 // By: Nick from CoffeeBeforeArch
 
-#include <assert.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstdlib>
 #include <iostream>
-
-using namespace std;
 
 // 1-D convolution kernel
 //  Arguments:
@@ -113,7 +111,7 @@ int main() {
   // Verify the result
   verify_result(h_array, h_mask, h_result, n, m);
 
-  cout << "COMPLETED SUCCESSFULLY\n";
+  std::cout << "COMPLETED SUCCESSFULLY\n";
 
   // Free allocated memory on the device and host
   delete[] h_array;
