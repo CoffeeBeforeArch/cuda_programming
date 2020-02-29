@@ -1,9 +1,11 @@
 // This program implements a 1D convolution using CUDA
 // By: Nick from CoffeeBeforeArch
 
+#include <algorithm>
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
+#include <vector>
 
 // 1-D convolution kernel
 //  Arguments:
@@ -70,21 +72,17 @@ int main() {
   int bytes_m = m * sizeof(int);
 
   // Allocate the array (include edge elements)...
-  int *h_array = new int[n];
+  std::vector<int> h_array(n);
 
   // ... and initialize it
-  for (int i = 0; i < n; i++) {
-    h_array[i] = rand() % 100;
-  }
+  std::generate(begin(h_array), end(h_array), [](){ return rand() % 100; });
 
   // Allocate the mask and initialize it
-  int *h_mask = new int[m];
-  for (int i = 0; i < m; i++) {
-    h_mask[i] = rand() % 10;
-  }
+  std::vector<int> h_mask(m);
+  std::generate(begin(h_mask), end(h_mask), [](){ return rand() % 10; });
 
   // Allocate space for the result
-  int *h_result = new int[n];
+  std::vector<int> h_result(n);
 
   // Allocate space on the device
   int *d_array, *d_mask, *d_result;
@@ -93,8 +91,8 @@ int main() {
   cudaMalloc(&d_result, bytes_n);
 
   // Copy the data to the device
-  cudaMemcpy(d_array, h_array, bytes_n, cudaMemcpyHostToDevice);
-  cudaMemcpy(d_mask, h_mask, bytes_m, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_array, h_array.data(), bytes_n, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_mask, h_mask.data(), bytes_m, cudaMemcpyHostToDevice);
 
   // Threads per TB
   int THREADS = 256;
@@ -106,18 +104,17 @@ int main() {
   convolution_1d<<<GRID, THREADS>>>(d_array, d_mask, d_result, n, m);
 
   // Copy back the result
-  cudaMemcpy(h_result, d_result, bytes_n, cudaMemcpyDeviceToHost);
+  cudaMemcpy(h_result.data(), d_result, bytes_n, cudaMemcpyDeviceToHost);
 
   // Verify the result
-  verify_result(h_array, h_mask, h_result, n, m);
+  verify_result(h_array.data(), h_mask.data(), h_result.data(), n, m);
 
   std::cout << "COMPLETED SUCCESSFULLY\n";
 
   // Free allocated memory on the device and host
-  delete[] h_array;
-  delete[] h_result;
-  delete[] h_mask;
   cudaFree(d_result);
+  cudaFree(d_mask);
+  cudaFree(d_array);
 
   return 0;
 }
