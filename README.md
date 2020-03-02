@@ -18,15 +18,15 @@ CUDA version: 10.0, 9.1
 # Environment Setup
 | Video | Concepts | Files |
 | ----- | -------- | ----- |
-|[Visual Studio 2019](https://youtu.be/cuCWbztXk4Y) | | |
-|[Linux](https://youtu.be/wxNQQP9U1Bc) | | |
+|[Visual Studio 2019](https://youtu.be/cuCWbztXk4Y) | IDE, Linker | |
+|[Linux](https://youtu.be/wxNQQP9U1Bc) | VIM, NVCC | |
 
 # Vector Addition
 | Video | Concepts | Files |
 | ----- | -------- | ----- |
-|[Baseline](https://youtu.be/QVVTsLmMlwk) | | |
-|[Pinned Memory](https://youtu.be/ShT7raBPP8k) | | |
-|[Unified Memory](https://youtu.be/LGhduZNudDY) | | |
+|[Baseline](https://youtu.be/QVVTsLmMlwk) | Allocation, Copying Memory, Indexing, Thread IDs, PTX, SASS | |
+|[Pinned Memory](https://youtu.be/ShT7raBPP8k) | Pinned Memory | |
+|[Unified Memory](https://youtu.be/LGhduZNudDY) | Unified Memory, Prefetching | |
 
 # Matrix Multiplication (GEMM)
 | Video | Concepts | Files |
