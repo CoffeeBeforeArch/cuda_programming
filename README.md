@@ -31,15 +31,22 @@ CUDA version: 10.0, 9.1
 # Matrix Multiplication (GEMM)
 | Video | Concepts | Files |
 | ----- | -------- | ----- |
+| | 2D Indexing | |
+| | Shared Memory | |
 
 # Sum Reduction
 | Video | Concepts | Files |
 | ----- | -------- | ----- |
+| | Inter-kernel synchronization | |
+| | Cooperative Groups | |
 
 # Convolution
 | Video | Concepts | Files |
 | ----- | -------- | ----- |
+| | Constant Memory | |
 
 # Histogram
 | Video | Concepts | Files |
 | ----- | -------- | ----- |
+| | Global Atomics | |
+| | Shared Memory Atomics | |
