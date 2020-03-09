@@ -4,11 +4,15 @@
 #include <cstdio>
 #include <cstring>
 
-// Simple struct that should only contain a non-accessable vfunc-pointer
+// Simple struct that contains a non-accessable pointer and two ints
 struct VFuncStruct {
+  // Some random data members
+  int a;
+  int b;
+  
   // Must be marked __host__ __device__ to work on both CPU and GPU
-  virtual __host__ __device__ void getSize() {
-    printf("Sizeof vfunc struct is %lu\n", sizeof(VFuncStruct));
+  virtual __host__ __device__ void printValues() {
+    printf("a = %d, b = %d\n", a, b);
   }
 };
 
@@ -17,12 +21,14 @@ __global__ void virtualFunctions(VFuncStruct *vf) {
   // Unsurprisingly, this fails.
   // The pointer stored in the struct is to CPU memory, and will not
   // resolve on the GPU.
-  vf->getSize();
+  vf->printValues();
 }
 
 int main() {
   // Create a struct
   VFuncStruct vf_host{};
+  vf_host.a = 5;
+  vf_host.b = 10;
   
   // Reserve space for the struct on the GPU
   VFuncStruct *vf;

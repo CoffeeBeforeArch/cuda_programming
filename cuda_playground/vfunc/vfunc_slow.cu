@@ -1,15 +1,19 @@
-// This program shows off a vfunc that will not work on the GPU
+// This program shows off the defined way of using objects with virtual
+// functions on the GPU using device-side dynamic allocation
 // By: Nick from CoffeeBeforeArch
 
 #include <cstdio>
 #include <cstring>
 
-
-// Simple struct that should only contain a non-accessable vfunc-pointer
+// Simple struct that contains a non-accessable pointer and two ints
 struct VFuncStruct {
+  // Some random data members
+  int a;
+  int b;
+
   // Must be marked __host__ __device__ to work on both CPU and GPU
-  virtual __host__ __device__ void getSize() {
-    printf("Sizeof vfunc struct is %lu\n", sizeof(VFuncStruct));
+  virtual __host__ __device__ void printValues() {
+    printf("a = %d, b = %d\n", a, b);
   }
 };
 
@@ -21,8 +25,10 @@ __managed__ VFuncStruct *vf;
 __global__ void virtualFunctions() {
   // Create a new struct
   VFuncStruct *v_test = new VFuncStruct();
+  v_test->a = 5;
+  v_test->b = 10;
   // Test the virtual function
-  v_test->getSize();
+  v_test->printValues();
   // Save the pointer
   vf = v_test;
 }
@@ -30,7 +36,7 @@ __global__ void virtualFunctions() {
 // Calls our virtual function from the struct created in the previous
 // kernel
 __global__ void callVFunc() {
-  vf->getSize();
+  vf->printValues();
 }
 
 int main() {
