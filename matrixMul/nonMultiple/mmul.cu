@@ -13,20 +13,20 @@ using std::generate;
 using std::vector;
 
 // Matrix dimensions
-const int M = (1 << 9) + 7;
-const int N = (1 << 10) + 7;
-const int K = (1 << 11) + 7;
+constexpr int M = (1 << 9) + 7;
+constexpr int N = (1 << 10) + 7;
+constexpr int K = (1 << 11) + 7;
 
 // Threads per CTA dimension
-const int THREADS = 32;
+constexpr int THREADS = 32;
 
 // Padded matrix dimensions
-const int M_padded = M + THREADS - M % 32;
-const int N_padded = N + THREADS - N % 32;
-const int K_padded = K + THREADS - K % 32;
+constexpr int M_padded = M + THREADS - M % THREADS;
+constexpr int N_padded = N + THREADS - N % THREADS;
+constexpr int K_padded = K + THREADS - K % THREADS;
 
 // Size of shared memory per TB
-const int SHMEM_SIZE = 1 << 10;
+constexpr int SHMEM_SIZE = THREADS * THREADS;
 
 __global__ void matrixMul(const int *a, const int *b, int *c) {
   // Compute each thread's global row and column index
