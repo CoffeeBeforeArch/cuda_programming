@@ -3,29 +3,18 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cstdlib>
 #include <iostream>
-#include <iterator>
 #include <vector>
-
-using std::begin;
-using std::copy;
-using std::cout;
-using std::end;
-using std::generate;
-using std::vector;
 
 // CUDA kernel for vector addition
 // __global__ means this is called from the CPU, and runs on the GPU
-__global__ void vectorAdd(int* a, int* b, int* c, int N) {
+__global__ void vectorAdd(const int *__restrict a, const int *__restrict b,
+                          int *__restruct c, int N) {
   // Calculate global thread ID
   int tid = (blockIdx.x * blockDim.x) + threadIdx.x;
 
   // Boundary check
-  if (tid < N) {
-    // Each thread adds a single element
-    c[tid] = a[tid] + b[tid];
-  }
+  if (tid < N) c[tid] = a[tid] + b[tid];
 }
 
 // Check vector add result
@@ -37,17 +26,22 @@ void verify_result(vector<int> &a, vector<int> &b, vector<int> &c) {
 
 int main() {
   // Array size of 2^16 (65536 elements)
-  constexpr int N = 1 << 26;
-  size_t bytes = sizeof(int) * N;
+  constexpr int N = 1 << 16;
+  constexpr size_t bytes = sizeof(int) * N;
 
   // Vectors for holding the host-side (CPU-side) data
-  vector<int> a(N);
-  vector<int> b(N);
-  vector<int> c(N);
+  std::vector<int> a;
+  a.reserve(N);
+  std::vector<int> b;
+  b.reserve(N);
+  std::vector<int> c;
+  c.reserve(N);
 
   // Initialize random numbers in each array
-  generate(begin(a), end(a), []() { return rand() % 100; });
-  generate(begin(b), end(b), []() { return rand() % 100; });
+  for (int i = 0; i < N; i++) {
+    a.push_back(rand() % 100);
+    b.push_back(rand() % 100);
+  }
 
   // Allocate memory on the device
   int *d_a, *d_b, *d_c;
@@ -59,7 +53,7 @@ int main() {
   cudaMemcpy(d_a, a.data(), bytes, cudaMemcpyHostToDevice);
   cudaMemcpy(d_b, b.data(), bytes, cudaMemcpyHostToDevice);
 
-  // Threads per CTA (1024 threads per CTA)
+  // Threads per CTA (1024)
   int NUM_THREADS = 1 << 10;
 
   // CTAs per Grid
@@ -88,7 +82,7 @@ int main() {
   cudaFree(d_b);
   cudaFree(d_c);
 
-  cout << "COMPLETED SUCCESSFULLY\n";
+  std::cout << "COMPLETED SUCCESSFULLY\n";
 
   return 0;
 }
