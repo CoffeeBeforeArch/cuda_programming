@@ -1,5 +1,5 @@
 # GPGPU Programming with CUDA
-This repository contains all code from the YouTube series "CUDA Crash Course (v2)" by CoffeeBeforeArch.
+This repository contains all code from the YouTube series "CUDA Crash Course (v3)" by CoffeeBeforeArch.
 
 ## Contact
 
@@ -10,9 +10,9 @@ Operating System: Ubuntu 18.04
 
 Text Editor: VIM
 
-GPU: NVIDIA GTX 1050 Ti
+GPU: NVIDIA GTX 2060
 
-CUDA version: 10.0, 9.1
+CUDA version: 11, 10, 9
 
 ## Concepts covered in each video
 # Environment Setup
